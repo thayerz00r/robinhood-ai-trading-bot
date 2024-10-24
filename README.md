@@ -9,6 +9,21 @@ This is an automated trading bot for Robinhood that makes buy, sell, or hold dec
 - Processes stocks in your portfolio and watchlists
 - Configurable buying and selling parameters
 
+## How It Works
+
+1. **Execution Interval:**
+   - The bot runs every set number of seconds, as defined by `BOT_RUN_INTERVAL_SECONDS`.
+
+2. **Stock Processing:**
+   - The bot takes the current available stocks in your portfolio and tries to make decisions based on moving averages and insights from OpenAI.
+   - It also processes stocks from your watchlists and makes decisions accordingly.
+
+3. **Decision Making:**
+   - For each stock, the bot decides whether to buy, sell, or hold based on predefined criteria and market data.
+
+4. **Error Handling:**
+   - Any errors encountered during processing are logged with a timestamp for debugging purposes.
+  
 ## Installation
 
 1. **Clone the repository:**
@@ -35,6 +50,7 @@ This is an automated trading bot for Robinhood that makes buy, sell, or hold dec
     - `MIN_BUYING_AMOUNT_USD`: Minimum amount to buy in dollars
     - `MAX_BUYING_AMOUNT_USD`: Maximum amount to buy in dollars
     - `SELLING_AMOUNT_PERCENTAGE`: Default percentage of holding that will be sold at once, for example if holding is 100 stocks and SELLING_AMOUNT_PERCENTAGE = 0.25, then 25 stocks will be sold at once
+    - `BOT_RUN_INTERVAL_SECONDS`: Interval for running the bot, in seconds
 
 ## Usage
 

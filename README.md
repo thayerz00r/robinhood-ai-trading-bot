@@ -47,3 +47,8 @@ This is an automated trading bot for Robinhood that makes buy, sell, or hold dec
 ## Disclaimer
 
 This bot is for educational purposes only. Trading stocks involves risk, and you should only trade with money you can afford to lose. The author is not responsible for any financial losses you may incur.
+
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.

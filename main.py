@@ -22,6 +22,8 @@ MIN_BUYING_AMOUNT_USD = 0.02
 MAX_BUYING_AMOUNT_USD = 50
 # Default percentage of holding that will be sold at once, for example if holding is 100 stocks and SELLING_AMOUNT_PERCENTAGE = 0.25, then 25 stocks will be sold at once
 SELLING_AMOUNT_PERCENTAGE = 0.25
+# Interval for running the bot, in seconds
+BOT_RUN_INTERVAL_SECONDS = 60
 
 # Initialize OpenAI client
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
@@ -212,8 +214,8 @@ def trading_bot():
         
             print_with_timestamp(f"Bought: {bought_list}, Sold: {sold_list}")
             
-            # Wait for 1 minute before the next trade
-            time.sleep(60)
+            # Wait before the next trade
+            time.sleep(BOT_RUN_INTERVAL_SECONDS)
         except Exception as e:
             print_with_timestamp(f"Error: {e}")
 

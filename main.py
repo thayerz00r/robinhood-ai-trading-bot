@@ -160,10 +160,10 @@ def trading_bot():
                 continue
 
             stock_quantity = float(my_stocks[stock_symbol]['quantity']) if stock_symbol in my_stocks else 0.0
-            final_decision, amount = make_decision(stock_symbol, stock_quantity, buying_power)
-            print_with_timestamp(f"{stock_symbol} > Decision: {final_decision}, Amount: ${amount}")
+            decision, amount = make_decision(stock_symbol, stock_quantity, buying_power)
+            print_with_timestamp(f"{stock_symbol} > Decision: {decision}, Amount: ${amount}")
 
-            if final_decision == "buy":
+            if decision == "buy":
                 buy_resp = buy_stock(stock_symbol, amount)
                 if 'id' in buy_resp:
                     bought_stock_symbols.add(stock_symbol)
@@ -171,7 +171,7 @@ def trading_bot():
                 else:
                     print_with_timestamp(f"{stock_symbol} > Error buying ${amount}: {buy_resp}")
 
-            elif final_decision == "sell":
+            elif decision == "sell":
                 sell_resp = sell_stock(stock_symbol, amount)
                 if 'id' in sell_resp:
                     sold_stock_symbols.add(stock_symbol)

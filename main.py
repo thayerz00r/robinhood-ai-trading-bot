@@ -149,7 +149,7 @@ def trading_bot():
         except Exception as e:
             print_with_timestamp(f"Error getting watchlist stocks for {watchlist_name}: {e}")
 
-    print_with_timestamp(f"Stocks to proceed: {proceed_stock_symbols if proceed_stock_symbols else 'None'}")
+    print_with_timestamp(f"Stocks to proceed: {len(proceed_stock_symbols) if proceed_stock_symbols else 'None'}")
 
     if not proceed_stock_symbols:
         print_with_timestamp("No stocks to proceed. Exiting...")
@@ -158,6 +158,10 @@ def trading_bot():
     for stock_symbol in proceed_stock_symbols:
         try:
             buying_power = get_buying_power()
+            if buying_power < MIN_BUYING_AMOUNT_USD and stock_symbol not in my_stocks:
+                print_with_timestamp(f"{stock_symbol} > Skipping decision-making: not enough buying power for non-owned stock")
+                continue
+
             stock_quantity = float(my_stocks[stock_symbol]['quantity']) if stock_symbol in my_stocks else 0.0
             final_decision, amount = make_decision(stock_symbol, stock_quantity, buying_power)
             print_with_timestamp(f"{stock_symbol} > Decision: {final_decision}, Amount: ${amount}")

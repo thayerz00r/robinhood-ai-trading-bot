@@ -1,0 +1,25 @@
+# Global variables
+## Trading mode (demo, auto, manual)
+MODE = "demo"
+## Trading interval in seconds
+RUN_INTERVAL_SECONDS = 60
+## OpenAI API key
+OPENAI_API_KEY = "..."
+## Robinhood credentials
+ROBINHOOD_USERNAME = "..."
+ROBINHOOD_PASSWORD = "..."
+## Watchlist names (can be empty, or "My First List", "My Second List", etc.)
+WATCHLIST_NAMES = []
+## Trading parameters
+### Buying amount percentage of buying power
+BUYING_AMOUNT_PERCENTAGE = 0.5
+### Minimum and maximum buying amount in USD
+MIN_BUYING_AMOUNT_USD = 1
+### Maximum buying amount in USD
+MAX_BUYING_AMOUNT_USD = 10
+### Selling amount percentage of stock quantity
+SELLING_AMOUNT_PERCENTAGE = 0.5
+### Minimum and maximum selling amount in USD
+MIN_SELLING_AMOUNT_USD = 1
+### Maximum selling amount in USD
+MAX_SELLING_AMOUNT_USD = 10

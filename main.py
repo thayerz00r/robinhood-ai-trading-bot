@@ -90,7 +90,7 @@ def make_decision(stock_symbol, stock_quantity, buying_power):
     ai_response = openai_client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
-            {"role": "system", "content": "You are a precise financial trading advisor with a focus on swing trading."},
+            {"role": "system", "content": "You are a precise financial trading advisor with a focus on moving averages."},
             {"role": "user", "content": ai_prompt}
         ]
     )

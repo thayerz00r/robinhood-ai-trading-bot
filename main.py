@@ -128,9 +128,6 @@ def get_watch_list_stocks(name):
     return resp['results']
 
 def trading_bot():
-    print_with_timestamp("Logging in to Robinhood...")
-    login_to_robinhood()
-
     proceed_stock_symbols = set()
     bought_stock_symbols = set()
     sold_stock_symbols = set()
@@ -190,6 +187,9 @@ def trading_bot():
 
 # Run the trading bot in a loop
 def main():
+    print_with_timestamp("Logging in to Robinhood...")
+    login_to_robinhood()
+
     while True:
         try:
             trading_bot()

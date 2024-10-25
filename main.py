@@ -41,18 +41,18 @@ def buy_stock(stock_symbol, amount):
     quantity = round(amount / price, 6)
     return rh.orders.order_buy_fractional_by_quantity(stock_symbol, quantity)
 
-def sell_stock(stock_symbol, amount):
+def sell_stock(stock_symbol, quantity):
     if MODE == "demo":
-        print_with_timestamp(f"Demo sell action for {stock_symbol} at ${amount}")
+        print_with_timestamp(f"Demo sell action for {stock_symbol} for {quantity} quantity")
         return {"id": "demo"}
 
     if MODE == "manual":
-        confirm = input(f"Confirm sell for {stock_symbol} at ${amount}? (yes/no): ")
+        confirm = input(f"Confirm sell for {stock_symbol} for {quantity} quantity? (yes/no): ")
         if confirm.lower() != "yes":
             print_with_timestamp(f"Sell cancelled for {stock_symbol}")
             return {"id": "cancelled"}
 
-    return rh.orders.order_sell_fractional_by_price(stock_symbol, amount)
+    return rh.orders.order_sell_fractional_by_quantity(stock_symbol, quantity)
 
 # Make a decision to buy or sell based on AI prompt
 def make_decision(stock_symbol, stock_quantity, buying_power):
@@ -160,10 +160,18 @@ def trading_bot():
                 continue
 
             stock_quantity = float(my_stocks[stock_symbol]['quantity']) if stock_symbol in my_stocks else 0.0
+
             decision, amount = make_decision(stock_symbol, stock_quantity, buying_power)
             print_with_timestamp(f"{stock_symbol} > Decision: {decision}, Amount: ${amount}")
 
             if decision == "buy":
+                if amount > MAX_BUYING_AMOUNT_USD:
+                    amount = MAX_BUYING_AMOUNT_USD
+                if amount < MIN_BUYING_AMOUNT_USD:
+                    amount = MIN_BUYING_AMOUNT_USD
+                if amount > buying_power:
+                    amount = buying_power
+
                 buy_resp = buy_stock(stock_symbol, amount)
                 if 'id' in buy_resp:
                     bought_stock_symbols.add(stock_symbol)
@@ -172,12 +180,18 @@ def trading_bot():
                     print_with_timestamp(f"{stock_symbol} > Error buying ${amount}: {buy_resp}")
 
             elif decision == "sell":
-                sell_resp = sell_stock(stock_symbol, amount)
+                quote = rh.stocks.get_latest_price(stock_symbol)
+                price = float(quote[0])
+                quantity = round(amount / price, 6)
+                if quantity > stock_quantity:
+                    quantity = stock_quantity
+
+                sell_resp = sell_stock(stock_symbol, quantity)
                 if 'id' in sell_resp:
                     sold_stock_symbols.add(stock_symbol)
-                    print_with_timestamp(f"{stock_symbol} > Sold ${amount}")
+                    print_with_timestamp(f"{stock_symbol} > Sold {quantity} quantity")
                 else:
-                    print_with_timestamp(f"{stock_symbol} > Error selling ${amount}: {sell_resp}")
+                    print_with_timestamp(f"{stock_symbol} > Error selling {quantity} quantity: {sell_resp}")
 
         except Exception as e:
             print_with_timestamp(f"{stock_symbol} > Error processing: {e}")

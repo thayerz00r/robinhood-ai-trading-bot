@@ -42,7 +42,7 @@ This is an automated trading bot for Robinhood that makes buy, sell, or hold dec
 3. **Configure the bot:**
 
    You can configure the bot by modifying the global variables in `config.py`:
-   - `MODE`: Trading mode (demo, auto, manual)
+   - `MODE`: Trading mode: demo, auto, manual. In demo mode, the bot will not execute trades, only log them. In auto mode, the bot will execute trades automatically. In manual mode, the bot will prompt the user to confirm trades.
    - `RUN_INTERVAL_SECONDS`: Interval for running the bot, in seconds
    - `OPENAI_API_KEY`: OpenAI API key
    - `ROBINHOOD_USERNAME`: Robinhood username (email address used for login)

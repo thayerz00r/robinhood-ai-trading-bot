@@ -4,6 +4,7 @@ from datetime import datetime
 import time
 import pandas as pd
 import json
+import re
 from config import *
 
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
@@ -95,9 +96,10 @@ def make_decision(stock_symbol, stock_quantity, buying_power):
         ]
     )
 
-    # Parse AI decision
+    # Clean and parse AI decision
     try:
-        ai_content = json.loads(ai_response.choices[0].message.content.strip())
+        ai_content = re.sub(r'```json|```', '', ai_response.choices[0].message.content.strip())
+        ai_content = json.loads(ai_content)
     except json.JSONDecodeError as e:
         raise Exception("Invalid JSON response from OpenAI: " + ai_response.choices[0].message.content.strip())
 

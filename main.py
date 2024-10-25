@@ -23,7 +23,7 @@ def get_historical_data(stock_symbol, interval="day", span="year"):
 def calculate_moving_averages(prices, short_window=50, long_window=200):
     short_mavg = pd.Series(prices).rolling(window=short_window).mean().iloc[-1]
     long_mavg = pd.Series(prices).rolling(window=long_window).mean().iloc[-1]
-    return round(short_mavg, 6), round(long_mavg, 6)
+    return round(short_mavg, 2), round(long_mavg, 2)
 
 def buy_stock(stock_symbol, amount):
     if MODE == "demo":
@@ -71,11 +71,11 @@ def make_decision(stock_symbol, stock_quantity, buying_power):
         f"50-day moving average: ${moving_avg_50}\n"
         f"200-day moving average: ${moving_avg_200}\n\n"
         f"Your buying power is ${buying_power}.\n"
-        f"You can buy up to ${MAX_BUYING_AMOUNT_USD} but not more than {BUYING_AMOUNT_PERCENTAGE}% of your buying power.\n"
+        f"You can buy up to ${MAX_BUYING_AMOUNT_USD} but not more than {BUYING_AMOUNT_PERCENTAGE * 100}% of your buying power.\n"
         f"Minimum buying amount is ${MIN_BUYING_AMOUNT_USD}.\n"
         f"Remember: you can't buy stocks if you don't have enough buying power.\n\n"
         f"Your stock quantity is {stock_quantity}.\n"
-        f"You can sell up to ${MAX_SELLING_AMOUNT_USD} but not more than {SELLING_AMOUNT_PERCENTAGE}% of your stock quantity.\n"
+        f"You can sell up to ${MAX_SELLING_AMOUNT_USD} but not more than {SELLING_AMOUNT_PERCENTAGE * 100}% of your stock quantity.\n"
         f"Minimum selling amount is ${MIN_SELLING_AMOUNT_USD}.\n"
         f"Remember: you can't sell stocks if you don't have any.\n\n"
         f"Make a decision about {stock_symbol} based on the data above.\n"

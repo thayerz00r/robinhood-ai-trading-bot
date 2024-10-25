@@ -72,10 +72,11 @@ def make_decision(stock_symbol, stock_quantity, buying_power):
         f"Your buying power is ${buying_power}.\n"
         f"You can buy up to ${MAX_BUYING_AMOUNT_USD} but not more than {BUYING_AMOUNT_PERCENTAGE}% of your buying power.\n"
         f"Minimum buying amount is ${MIN_BUYING_AMOUNT_USD}.\n"
+        f"Remember: you can't buy stocks if you don't have enough buying power.\n\n"
         f"Your stock quantity is {stock_quantity}.\n"
         f"You can sell up to ${MAX_SELLING_AMOUNT_USD} but not more than {SELLING_AMOUNT_PERCENTAGE}% of your stock quantity.\n"
-        f"You can't sell stocks if you don't have any.\n"
-        f"Minimum selling amount is ${MIN_SELLING_AMOUNT_USD}.\n\n"
+        f"Minimum selling amount is ${MIN_SELLING_AMOUNT_USD}.\n"
+        f"Remember: you can't sell stocks if you don't have any.\n\n"
         f"Make a decision about {stock_symbol} based on the data above.\n"
         "Provide a structured JSON response in this format:\n"
         '{ "decision": "<decision>", "amount": <amount> }\n'
@@ -139,9 +140,12 @@ def trading_bot():
 
     print_with_timestamp("Getting watchlist stocks to proceed...")
     for watchlist_name in WATCHLIST_NAMES:
-        watchlist_stocks = get_watch_list_stocks(watchlist_name)
-        for watchlist_stock in watchlist_stocks:
-            proceed_stock_symbols.add(watchlist_stock['symbol'])
+        try:
+            watchlist_stocks = get_watch_list_stocks(watchlist_name)
+            for watchlist_stock in watchlist_stocks:
+                proceed_stock_symbols.add(watchlist_stock['symbol'])
+        except Exception as e:
+            print_with_timestamp(f"Error getting watchlist stocks for {watchlist_name}: {e}")
 
     print_with_timestamp(f"Proceed stocks: {proceed_stock_symbols}")
 

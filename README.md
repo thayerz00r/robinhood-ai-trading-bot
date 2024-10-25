@@ -12,7 +12,7 @@ This is an automated trading bot for Robinhood that makes buy, sell, or hold dec
 ## How It Works
 
 1. **Execution Interval:**
-   - The bot runs every set number of seconds, as defined by `BOT_RUN_INTERVAL_SECONDS`.
+   - The bot runs every set number of seconds, as defined by `RUN_INTERVAL_SECONDS`.
 
 2. **Stock Processing:**
    - The bot takes the current available stocks in your portfolio and tries to make decisions based on moving averages and insights from OpenAI.
@@ -23,7 +23,7 @@ This is an automated trading bot for Robinhood that makes buy, sell, or hold dec
 
 4. **Error Handling:**
    - Any errors encountered during processing are logged with a timestamp for debugging purposes.
-  
+
 ## Installation
 
 1. **Clone the repository:**
@@ -39,18 +39,21 @@ This is an automated trading bot for Robinhood that makes buy, sell, or hold dec
     pip install robin_stocks pandas numpy
     ```
 
-3. **Fill global variables in the bot file:**
+3. **Configure the bot:**
 
-    You can configure the bot by modifying the global variables in `main.py`:
-    - `OPENAI_API_KEY`: OpenAI API key
-    - `ROBINHOOD_USERNAME`: Robinhood username is the email address used for login
-    - `ROBINHOOD_PASSWORD`: Robinhood password is not the same as the login password
-    - `WATCHLIST_NAMES`: Watchlist names to get stocks from
-    - `BUYING_AMOUNT_PERCENTAGE`: Default percentage of buying power that will be used for buying stocks, for example if buying power is 1000$ and BUYING_AMOUNT_PERCENTAGE = 0.25, then 250$ will be used for buying stocks
-    - `MIN_BUYING_AMOUNT_USD`: Minimum amount to buy in dollars
-    - `MAX_BUYING_AMOUNT_USD`: Maximum amount to buy in dollars
-    - `SELLING_AMOUNT_PERCENTAGE`: Default percentage of holding that will be sold at once, for example if holding is 100 stocks and SELLING_AMOUNT_PERCENTAGE = 0.25, then 25 stocks will be sold at once
-    - `BOT_RUN_INTERVAL_SECONDS`: Interval for running the bot, in seconds
+   You can configure the bot by modifying the global variables in `config.py`:
+   - `MODE`: Trading mode (demo, auto, manual)
+   - `RUN_INTERVAL_SECONDS`: Interval for running the bot, in seconds
+   - `OPENAI_API_KEY`: OpenAI API key
+   - `ROBINHOOD_USERNAME`: Robinhood username (email address used for login)
+   - `ROBINHOOD_PASSWORD`: Robinhood password
+   - `WATCHLIST_NAMES`: Watchlist names to get stocks from
+   - `BUYING_AMOUNT_PERCENTAGE`: Default percentage of buying power that will be used for buying stocks
+   - `MIN_BUYING_AMOUNT_USD`: Minimum amount to buy in dollars
+   - `MAX_BUYING_AMOUNT_USD`: Maximum amount to buy in dollars
+   - `SELLING_AMOUNT_PERCENTAGE`: Default percentage of holding that will be sold at once
+   - `MIN_SELLING_AMOUNT_USD`: Minimum amount to sell in dollars
+   - `MAX_SELLING_AMOUNT_USD`: Maximum amount to sell in dollars
 
 ## Usage
 
@@ -63,7 +66,6 @@ This is an automated trading bot for Robinhood that makes buy, sell, or hold dec
 ## Disclaimer
 
 This bot is for educational purposes only. Trading stocks involves risk, and you should only trade with money you can afford to lose. The author is not responsible for any financial losses you may incur.
-
 
 ## License
 

@@ -147,7 +147,11 @@ def trading_bot():
         except Exception as e:
             print_with_timestamp(f"Error getting watchlist stocks for {watchlist_name}: {e}")
 
-    print_with_timestamp(f"Proceed stocks: {proceed_stock_symbols}")
+    print_with_timestamp(f"Stocks to proceed: {proceed_stock_symbols if proceed_stock_symbols else 'None'}")
+
+    if not proceed_stock_symbols:
+        print_with_timestamp("No stocks to proceed. Exiting...")
+        return
 
     for stock_symbol in proceed_stock_symbols:
         try:

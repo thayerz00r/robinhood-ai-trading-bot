@@ -9,21 +9,26 @@ from config import *
 
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
+
 def print_with_timestamp(msg):
     print(f"[{datetime.now()}]  {msg}")
 
+
 def login_to_robinhood():
     rh.login(ROBINHOOD_USERNAME, ROBINHOOD_PASSWORD)
+
 
 def get_historical_data(stock_symbol, interval="day", span="year"):
     historical_data = rh.stocks.get_stock_historicals(stock_symbol, interval=interval, span=span)
     prices = [float(day['close_price']) for day in historical_data]
     return prices
 
+
 def calculate_moving_averages(prices, short_window=50, long_window=200):
     short_mavg = pd.Series(prices).rolling(window=short_window).mean().iloc[-1]
     long_mavg = pd.Series(prices).rolling(window=long_window).mean().iloc[-1]
     return round(short_mavg, 2), round(long_mavg, 2)
+
 
 def buy_stock(stock_symbol, amount):
     if MODE == "demo":
@@ -41,6 +46,7 @@ def buy_stock(stock_symbol, amount):
     quantity = round(amount / price, 6)
     return rh.orders.order_buy_fractional_by_quantity(stock_symbol, quantity)
 
+
 def sell_stock(stock_symbol, quantity):
     if MODE == "demo":
         print_with_timestamp(f"Demo sell action for {stock_symbol} for {quantity} quantity")
@@ -53,6 +59,7 @@ def sell_stock(stock_symbol, quantity):
             return {"id": "cancelled"}
 
     return rh.orders.order_sell_fractional_by_quantity(stock_symbol, quantity)
+
 
 # Make a decision to buy or sell based on AI prompt
 def make_decision(stock_symbol, stock_quantity, buying_power):
@@ -115,17 +122,21 @@ def make_decision(stock_symbol, stock_quantity, buying_power):
 
     return ai_decision, ai_amount
 
+
 def get_buying_power():
     profile_data = rh.profiles.load_account_profile()
     buying_power = float(profile_data['buying_power'])
     return buying_power
 
+
 def get_my_stocks():
     return rh.build_holdings()
+
 
 def get_watch_list_stocks(name):
     resp = rh.get_watchlist_by_name(name)
     return resp['results']
+
 
 def trading_bot():
     proceed_stock_symbols = set()
@@ -199,6 +210,7 @@ def trading_bot():
     print_with_timestamp(f"Bought stocks: {bought_stock_symbols if bought_stock_symbols else 'None'}")
     print_with_timestamp(f"Sold stocks: {sold_stock_symbols if sold_stock_symbols else 'None'}")
 
+
 # Run the trading bot in a loop
 def main():
     print_with_timestamp("Logging in to Robinhood...")
@@ -212,6 +224,7 @@ def main():
         except Exception as e:
             print_with_timestamp(f"Trading bot error: {e}")
             time.sleep(30)
+
 
 if __name__ == '__main__':
     main()

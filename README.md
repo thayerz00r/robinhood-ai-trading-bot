@@ -36,7 +36,7 @@ This is an automated trading bot for Robinhood that makes buy, sell, or hold dec
 2. **Install dependencies:**
 
     ```sh
-    pip install robin_stocks pandas numpy
+    pip install robin_stocks openai pandas
     ```
 
 3. **Configure the bot:**

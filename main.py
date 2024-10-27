@@ -76,7 +76,7 @@ def make_decision(buying_power, portfolio_overview, watchlist_overview):
         f"- Minimum buy amount: ${MIN_BUYING_AMOUNT_USD}\n"
         f"- Maximum buy amount: ${MAX_BUYING_AMOUNT_USD}\n\n"
         f"Provide a structured JSON response in this format:\n"
-        '[{"decision": "<decision>", "stock_symbol": "<symbol>", "amount": <amount>}, ...]\n'
+        '[{"stock_symbol": "<symbol>", "decision": "<decision>", "amount": <amount>}, ...]\n'
         "Decision options: buy, sell, hold\n"
         "Amount is the suggested amount to buy or sell in $\n"
         "Return only the JSON array, without explanation or extra text."
@@ -117,6 +117,8 @@ def get_watchlist_stocks(name):
 
 
 def trading_bot():
+    trading_results = {}
+
     print_with_timestamp(f"Running trading bot in {MODE} mode...")
 
     print_with_timestamp("Logging in to Robinhood...")
@@ -155,8 +157,9 @@ def trading_bot():
         except Exception as e:
             print_with_timestamp(f"Error getting watchlist stocks for {watchlist_name}: {e}")
 
-    print_with_timestamp(f"Total watchlist stocks: {len(watchlist_stocks)}, limit: {WATCHLIST_OVERVIEW_LIMIT}")
+    print_with_timestamp(f"Total watchlist stocks: {len(watchlist_stocks)}")
     if len(watchlist_stocks) > WATCHLIST_OVERVIEW_LIMIT:
+        print_with_timestamp(f"Limiting watchlist stocks to overview limit of {WATCHLIST_OVERVIEW_LIMIT} (random selection)...")
         watchlist_stocks = np.random.choice(watchlist_stocks, WATCHLIST_OVERVIEW_LIMIT, replace=False)
 
     print_with_timestamp("Prepare watchlist overview for AI analysis...")
@@ -172,9 +175,6 @@ def trading_bot():
             watchlist_overview[stock_symbol]["50_day_mavg"] = moving_avg_50
             watchlist_overview[stock_symbol]["200_day_mavg"] = moving_avg_200
 
-    successfully_sold = []
-    successfully_bought = []
-
     try:
         print_with_timestamp("Making AI-based decision...")
         buying_power = get_buying_power()
@@ -189,14 +189,16 @@ def trading_bot():
                 sell_resp = sell_stock(stock_symbol, amount)
                 if 'id' in sell_resp:
                     if sell_resp['id'] == "demo":
+                        trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "sell", "result": "success", "details": "Demo mode"}
                         print_with_timestamp(f"{stock_symbol} > Demo > Sold ${amount} worth of stock")
-                        successfully_sold.append({"stock_symbol": stock_symbol, "amount": amount, "mode": "demo"})
                     elif sell_resp['id'] == "cancelled":
+                        trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "sell", "result": "cancelled", "details": "Cancelled by user"}
                         print_with_timestamp(f"{stock_symbol} > Sell cancelled")
                     else:
+                        trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "sell", "result": "success", "details": sell_resp}
                         print_with_timestamp(f"{stock_symbol} > Sold ${amount} worth of stock")
-                        successfully_sold.append({"stock_symbol": stock_symbol, "amount": amount})
                 else:
+                    trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "sell", "result": "error", "details": sell_resp}
                     print_with_timestamp(f"{stock_symbol} > Error selling: {sell_resp}")
 
         print_with_timestamp("Executing buy decisions...")
@@ -208,20 +210,23 @@ def trading_bot():
                 buy_resp = buy_stock(stock_symbol, amount)
                 if 'id' in buy_resp:
                     if buy_resp['id'] == "demo":
+                        trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "buy", "result": "success", "details": "Demo mode"}
                         print_with_timestamp(f"{stock_symbol} > Demo > Bought ${amount} worth of stock")
-                        successfully_bought.append({"stock_symbol": stock_symbol, "amount": amount, "mode": "demo"})
                     elif buy_resp['id'] == "cancelled":
+                        trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "buy", "result": "cancelled", "details": "Cancelled by user"}
                         print_with_timestamp(f"{stock_symbol} > Buy cancelled")
                     else:
+                        trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "buy", "result": "success", "details": buy_resp}
                         print_with_timestamp(f"{stock_symbol} > Bought ${amount} worth of stock")
-                        successfully_bought.append({"stock_symbol": stock_symbol, "amount": amount})
                 else:
+                    trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "buy", "result": "error", "details": buy_resp}
                     print_with_timestamp(f"{stock_symbol} > Error buying: {buy_resp}")
 
     except Exception as e:
         print_with_timestamp(f"Error in decision-making process: {e}")
 
-    return successfully_sold, successfully_bought
+    return trading_results
+
 
 # Run the trading bot in a loop
 def main():
@@ -230,9 +235,10 @@ def main():
             # Do not run bot if it's not working hours (9am-4pm EST) and workdays (Mon-Fri)
             current_time = datetime.now()
             if not RUN_ON_WORKDAYS_ONLY or (current_time.weekday() < 5 and 9 <= current_time.hour < 16):
-                successfully_sold, successfully_bought = trading_bot()
-                print_with_timestamp(f"Successfully sold: {successfully_sold}")
-                print_with_timestamp(f"Successfully bought: {successfully_bought}")
+                trading_results = trading_bot()
+                total_bought = sum([result['amount'] for result in trading_results.values() if result['decision'] == "buy" and result['result'] == "success"])
+                total_sold = sum([result['amount'] for result in trading_results.values() if result['decision'] == "sell" and result['result'] == "success"])
+                print_with_timestamp(f"Total bought: ${total_bought}, Total sold: ${total_sold}")
             else:
                 print_with_timestamp("Outside of working hours, waiting for next run...")
 

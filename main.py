@@ -3,6 +3,7 @@ from openai import OpenAI
 from datetime import datetime
 import time
 import pandas as pd
+import numpy as np
 import json
 import re
 from config import *
@@ -60,13 +61,20 @@ def sell_stock(stock_symbol, amount):
     return rh.orders.order_sell_fractional_by_quantity(stock_symbol, quantity)
 
 
-def make_decision(portfolio_overview, buying_power):
-    # AI prompt for comprehensive portfolio analysis
+def make_decision(buying_power, portfolio_overview, watchlist_overview):
+    # Updated AI prompt to include both portfolio and watchlist overviews and configuration parameters
     ai_prompt = (
-        f"Analyze the following stock portfolio and suggest which stocks to sell first to increase buying power, "
-        f"and then if any stock is worth buying.\n\n"
+        f"Analyze the following stock portfolio and watchlist to make investment decisions. "
+        f"Suggest which stocks to sell first from the portfolio to increase buying power, "
+        f"and then determine if any stock from either the portfolio or the watchlist is worth buying.\n\n"
         f"Portfolio overview:\n{json.dumps(portfolio_overview, indent=2)}\n\n"
+        f"Watchlist overview:\n{json.dumps(watchlist_overview, indent=2)}\n\n"
         f"Total buying power: ${buying_power}.\n\n"
+        f"Guidelines for buy/sell amounts:\n"
+        f"- Minimum sell amount: ${MIN_SELLING_AMOUNT_USD}\n"
+        f"- Maximum sell amount: ${MAX_SELLING_AMOUNT_USD}\n"
+        f"- Minimum buy amount: ${MIN_BUYING_AMOUNT_USD}\n"
+        f"- Maximum buy amount: ${MAX_BUYING_AMOUNT_USD}\n\n"
         f"Provide a structured JSON response in this format:\n"
         '[{"decision": "<decision>", "stock_symbol": "<symbol>", "amount": <amount>}, ...]\n'
         "Decision options: buy, sell, hold\n"
@@ -90,10 +98,7 @@ def make_decision(portfolio_overview, buying_power):
     except json.JSONDecodeError as e:
         raise Exception("Invalid JSON response from OpenAI: " + ai_response.choices[0].message.content.strip())
 
-    # Sort decisions: prioritize "sell" actions
-    sell_decisions = [d for d in decisions if d["decision"] == "sell"]
-    buy_decisions = [d for d in decisions if d["decision"] == "buy"]
-    return sell_decisions + buy_decisions
+    return decisions
 
 
 def get_buying_power():
@@ -103,11 +108,12 @@ def get_buying_power():
 
 
 def get_my_stocks():
-    raw_holdings = rh.build_holdings()
-    portfolio = {}
-    for symbol, details in raw_holdings.items():
-        portfolio[symbol] = {k: v for k, v in details.items() if k not in ["id", "name"]}
-    return portfolio
+    return rh.build_holdings()
+
+
+def get_watchlist_stocks(name):
+    resp = rh.get_watchlist_by_name(name)
+    return resp['results']
 
 
 def trading_bot():
@@ -119,75 +125,120 @@ def trading_bot():
     print_with_timestamp("Getting my stocks to proceed...")
     my_stocks = get_my_stocks()
 
+    print_with_timestamp(f"Total stocks in portfolio: {len(my_stocks)}")
     print_with_timestamp("Prepare portfolio overview for AI analysis...")
     portfolio_overview = {}
     for stock_symbol, stock_data in my_stocks.items():
+        portfolio_overview[stock_symbol] = {
+            "price": stock_data['price'],
+            "quantity": stock_data['quantity'],
+            "average_buy_price": stock_data['average_buy_price'],
+            "equity": stock_data['equity'],
+            "percent_change": stock_data['percent_change'],
+            "intraday_percent_change": stock_data['intraday_percent_change'],
+            "equity_change": stock_data['equity_change'],
+            "pe_ratio": stock_data['pe_ratio'],
+            "percentage": stock_data['percentage'],
+        }
         prices = get_historical_data(stock_symbol)
         if len(prices) >= 200:
             moving_avg_50, moving_avg_200 = calculate_moving_averages(prices)
-            stock_data.update({
-                "50_day_mavg": moving_avg_50,
-                "200_day_mavg": moving_avg_200
-            })
-        portfolio_overview[stock_symbol] = stock_data
+            portfolio_overview[stock_symbol]["50_day_mavg"] = moving_avg_50
+            portfolio_overview[stock_symbol]["200_day_mavg"] = moving_avg_200
+
+    print_with_timestamp("Getting watchlist stocks to proceed...")
+    watchlist_stocks = []
+    for watchlist_name in WATCHLIST_NAMES:
+        try:
+            watchlist_stocks.extend(get_watchlist_stocks(watchlist_name))
+            watchlist_stocks = [stock for stock in watchlist_stocks if stock['symbol'] not in my_stocks.keys()]
+        except Exception as e:
+            print_with_timestamp(f"Error getting watchlist stocks for {watchlist_name}: {e}")
+
+    print_with_timestamp(f"Total watchlist stocks: {len(watchlist_stocks)}, limit: {WATCHLIST_OVERVIEW_LIMIT}")
+    if len(watchlist_stocks) > WATCHLIST_OVERVIEW_LIMIT:
+        watchlist_stocks = np.random.choice(watchlist_stocks, WATCHLIST_OVERVIEW_LIMIT, replace=False)
+
+    print_with_timestamp("Prepare watchlist overview for AI analysis...")
+    watchlist_overview = {}
+    for stock_data in watchlist_stocks:
+        stock_symbol = stock_data['symbol']
+        watchlist_overview[stock_symbol] = {
+            "price": stock_data['price'],
+        }
+        prices = get_historical_data(stock_symbol)
+        if len(prices) >= 200:
+            moving_avg_50, moving_avg_200 = calculate_moving_averages(prices)
+            watchlist_overview[stock_symbol]["50_day_mavg"] = moving_avg_50
+            watchlist_overview[stock_symbol]["200_day_mavg"] = moving_avg_200
+
+    successfully_sold = []
+    successfully_bought = []
 
     try:
         print_with_timestamp("Making AI-based decision...")
         buying_power = get_buying_power()
-        decisions = make_decision(portfolio_overview, buying_power)
+        decisions = make_decision(buying_power, portfolio_overview, watchlist_overview)
 
         print_with_timestamp("Executing sell decisions...")
         for decision in decisions:
-            stock_symbol = decision['stock_symbol']
-            amount = decision['amount']
-            print_with_timestamp(f"{stock_symbol} > Decision: {decision['decision']} with amount ${amount}")
-
             if decision['decision'] == "sell":
+                stock_symbol = decision['stock_symbol']
+                amount = decision['amount']
+                print_with_timestamp(f"{stock_symbol} > Decision: {decision['decision']} with amount ${amount}")
                 sell_resp = sell_stock(stock_symbol, amount)
                 if 'id' in sell_resp:
                     if sell_resp['id'] == "demo":
                         print_with_timestamp(f"{stock_symbol} > Demo > Sold ${amount} worth of stock")
+                        successfully_sold.append({"stock_symbol": stock_symbol, "amount": amount, "mode": "demo"})
                     elif sell_resp['id'] == "cancelled":
                         print_with_timestamp(f"{stock_symbol} > Sell cancelled")
                     else:
                         print_with_timestamp(f"{stock_symbol} > Sold ${amount} worth of stock")
+                        successfully_sold.append({"stock_symbol": stock_symbol, "amount": amount})
                 else:
                     print_with_timestamp(f"{stock_symbol} > Error selling: {sell_resp}")
 
         print_with_timestamp("Executing buy decisions...")
         for decision in decisions:
             if decision['decision'] == "buy":
-                buying_power = get_buying_power()
-
                 stock_symbol = decision['stock_symbol']
                 amount = decision['amount']
                 print_with_timestamp(f"{stock_symbol} > Decision: {decision['decision']} with amount ${amount}")
-
-                if amount <= buying_power:
-                    buy_resp = buy_stock(stock_symbol, amount)
-                    if 'id' in buy_resp:
-                        if buy_resp['id'] == "demo":
-                            print_with_timestamp(f"{stock_symbol} > Demo > Bought ${amount} worth of stock")
-                        elif buy_resp['id'] == "cancelled":
-                            print_with_timestamp(f"{stock_symbol} > Buy cancelled")
-                        else:
-                            print_with_timestamp(f"{stock_symbol} > Bought ${amount} worth of stock")
+                buy_resp = buy_stock(stock_symbol, amount)
+                if 'id' in buy_resp:
+                    if buy_resp['id'] == "demo":
+                        print_with_timestamp(f"{stock_symbol} > Demo > Bought ${amount} worth of stock")
+                        successfully_bought.append({"stock_symbol": stock_symbol, "amount": amount, "mode": "demo"})
+                    elif buy_resp['id'] == "cancelled":
+                        print_with_timestamp(f"{stock_symbol} > Buy cancelled")
                     else:
-                        print_with_timestamp(f"{stock_symbol} > Error buying: {buy_resp}")
+                        print_with_timestamp(f"{stock_symbol} > Bought ${amount} worth of stock")
+                        successfully_bought.append({"stock_symbol": stock_symbol, "amount": amount})
                 else:
-                    print_with_timestamp(f"{stock_symbol} > Not enough buying power to buy ${amount}")
+                    print_with_timestamp(f"{stock_symbol} > Error buying: {buy_resp}")
 
     except Exception as e:
         print_with_timestamp(f"Error in decision-making process: {e}")
 
+    return successfully_sold, successfully_bought
 
 # Run the trading bot in a loop
 def main():
     while True:
         try:
-            trading_bot()
+            # Do not run bot if it's not working hours (9am-4pm EST) and workdays (Mon-Fri)
+            current_time = datetime.now()
+            if not RUN_ON_WORKDAYS_ONLY or (current_time.weekday() < 5 and 9 <= current_time.hour < 16):
+                successfully_sold, successfully_bought = trading_bot()
+                print_with_timestamp(f"Successfully sold: {successfully_sold}")
+                print_with_timestamp(f"Successfully bought: {successfully_bought}")
+            else:
+                print_with_timestamp("Outside of working hours, waiting for next run...")
+
             print_with_timestamp(f"Waiting for {RUN_INTERVAL_SECONDS} seconds...")
             time.sleep(RUN_INTERVAL_SECONDS)
+
         except Exception as e:
             print_with_timestamp(f"Trading bot error: {e}")
             time.sleep(30)

@@ -19,6 +19,25 @@ def login_to_robinhood():
     rh.login(ROBINHOOD_USERNAME, ROBINHOOD_PASSWORD)
 
 
+def get_buying_power():
+    profile_data = rh.profiles.load_account_profile()
+    buying_power = float(profile_data['buying_power'])
+    return buying_power
+
+
+def get_my_stocks():
+    return rh.build_holdings()
+
+
+def get_watchlist_stocks(name):
+    resp = rh.get_watchlist_by_name(name)
+    return resp['results']
+
+
+def get_ratings(stock_symbol):
+    return rh.stocks.get_ratings(stock_symbol)
+
+
 def get_historical_data(stock_symbol, interval="day", span="year"):
     historical_data = rh.stocks.get_stock_historicals(stock_symbol, interval=interval, span=span)
     prices = [float(day['close_price']) for day in historical_data]
@@ -29,6 +48,35 @@ def calculate_moving_averages(prices, short_window=50, long_window=200):
     short_mavg = pd.Series(prices).rolling(window=short_window).mean().iloc[-1]
     long_mavg = pd.Series(prices).rolling(window=long_window).mean().iloc[-1]
     return round(short_mavg, 2), round(long_mavg, 2)
+
+
+def enrich_with_moving_averages(stock_data, stock_symbol):
+    prices = get_historical_data(stock_symbol)
+    if len(prices) >= 200:
+        moving_avg_50, moving_avg_200 = calculate_moving_averages(prices)
+        stock_data["50_day_mavg"] = moving_avg_50
+        stock_data["200_day_mavg"] = moving_avg_200
+    return stock_data
+
+
+def enrich_with_analyst_ratings(stock_data, stock_symbol):
+    ratings = get_ratings(stock_symbol)
+    if 'ratings' in ratings and len(ratings['ratings']) > 0:
+        last_sell_rating = next((rating for rating in ratings['ratings'] if rating['type'] == "sell"), None)
+        last_buy_rating = next((rating for rating in ratings['ratings'] if rating['type'] == "buy"), None)
+        if last_sell_rating:
+            stock_data["analyst_rating_sell_text"] = last_sell_rating['text'].decode('utf-8')
+        if last_buy_rating:
+            stock_data["analyst_rating_buy_text"] = last_buy_rating['text'].decode('utf-8')
+    if 'summary' in ratings and ratings['summary']:
+        summary = ratings['summary']
+        total_ratings = sum([summary['num_buy_ratings'], summary['num_hold_ratings'], summary['num_sell_ratings']])
+        if total_ratings > 0:
+            buy_percent = summary['num_buy_ratings'] / total_ratings * 100
+            sell_percent = summary['num_sell_ratings'] / total_ratings * 100
+            hold_percent = summary['num_hold_ratings'] / total_ratings * 100
+            stock_data["analyst_rating_summary"] = f"Buy: {buy_percent:.0f}%, Sell: {sell_percent:.0f}%, Hold: {hold_percent:.0f}%"
+    return stock_data
 
 
 def buy_stock(stock_symbol, amount):
@@ -101,21 +149,6 @@ def make_decision(buying_power, portfolio_overview, watchlist_overview):
     return decisions
 
 
-def get_buying_power():
-    profile_data = rh.profiles.load_account_profile()
-    buying_power = float(profile_data['buying_power'])
-    return buying_power
-
-
-def get_my_stocks():
-    return rh.build_holdings()
-
-
-def get_watchlist_stocks(name):
-    resp = rh.get_watchlist_by_name(name)
-    return resp['results']
-
-
 def trading_bot():
     trading_results = {}
 
@@ -142,11 +175,8 @@ def trading_bot():
             "pe_ratio": stock_data['pe_ratio'],
             "percentage": stock_data['percentage'],
         }
-        prices = get_historical_data(stock_symbol)
-        if len(prices) >= 200:
-            moving_avg_50, moving_avg_200 = calculate_moving_averages(prices)
-            portfolio_overview[stock_symbol]["50_day_mavg"] = moving_avg_50
-            portfolio_overview[stock_symbol]["200_day_mavg"] = moving_avg_200
+        portfolio_overview[stock_symbol] = enrich_with_moving_averages(portfolio_overview[stock_symbol], stock_symbol)
+        portfolio_overview[stock_symbol] = enrich_with_analyst_ratings(portfolio_overview[stock_symbol], stock_symbol)
 
     print_with_timestamp("Getting watchlist stocks to proceed...")
     watchlist_stocks = []
@@ -169,11 +199,8 @@ def trading_bot():
         watchlist_overview[stock_symbol] = {
             "price": stock_data['price'],
         }
-        prices = get_historical_data(stock_symbol)
-        if len(prices) >= 200:
-            moving_avg_50, moving_avg_200 = calculate_moving_averages(prices)
-            watchlist_overview[stock_symbol]["50_day_mavg"] = moving_avg_50
-            watchlist_overview[stock_symbol]["200_day_mavg"] = moving_avg_200
+        watchlist_overview[stock_symbol] = enrich_with_moving_averages(watchlist_overview[stock_symbol], stock_symbol)
+        watchlist_overview[stock_symbol] = enrich_with_analyst_ratings(watchlist_overview[stock_symbol], stock_symbol)
 
     try:
         print_with_timestamp("Making AI-based decision...")

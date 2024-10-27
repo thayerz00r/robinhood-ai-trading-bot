@@ -42,18 +42,18 @@ This is an automated trading bot for Robinhood that makes buy, sell, or hold dec
 3. **Configure the bot:**
 
    You can configure the bot by modifying the global variables in `config.py`:
-   - `MODE`: Trading mode: demo, auto, manual. In demo mode, the bot will not execute trades, only log them. In auto mode, the bot will execute trades automatically. In manual mode, the bot will prompt the user to confirm trades.
-   - `RUN_INTERVAL_SECONDS`: Interval for running the bot, in seconds
-   - `OPENAI_API_KEY`: OpenAI API key
-   - `ROBINHOOD_USERNAME`: Robinhood username (email address used for login)
-   - `ROBINHOOD_PASSWORD`: Robinhood password
-   - `WATCHLIST_NAMES`: Watchlist names to get stocks from
-   - `BUYING_AMOUNT_PERCENTAGE`: Default percentage of buying power that will be used for buying stocks
-   - `MIN_BUYING_AMOUNT_USD`: Minimum amount to buy in dollars
-   - `MAX_BUYING_AMOUNT_USD`: Maximum amount to buy in dollars
-   - `SELLING_AMOUNT_PERCENTAGE`: Default percentage of holding that will be sold at once
-   - `MIN_SELLING_AMOUNT_USD`: Minimum amount to sell in dollars
-   - `MAX_SELLING_AMOUNT_USD`: Maximum amount to sell in dollars
+   - `MODE` - Trading mode (demo, auto, manual)
+   - `RUN_ON_WORKDAYS_ONLY` - Run bot only on workdays
+   - `RUN_INTERVAL_SECONDS` - Trading interval in seconds
+   - `WATCHLIST_NAMES` - Watchlist names (can be empty, or "My First List", "My Second List", etc.)
+   - `WATCHLIST_OVERVIEW_LIMIT` - Number of stocks to process in decision-making (e.g. 20)
+   - `MIN_SELLING_AMOUNT_USD` - Minimum sell amount in USD
+   - `MAX_SELLING_AMOUNT_USD` - Maximum sell amount in USD
+   - `MIN_BUYING_AMOUNT_USD` - Minimum buy amount in USD
+   - `MAX_BUYING_AMOUNT_USD` - Maximum buy amount in USD
+   - `OPENAI_API_KEY` - OpenAI API key
+   - `ROBINHOOD_USERNAME` - Robinhood username
+   - `ROBINHOOD_PASSWORD` - Robinhood password
 
 ## Usage
 

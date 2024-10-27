@@ -96,7 +96,7 @@ def make_decision(stock_symbol, stock_quantity, buying_power):
 
     # Query OpenAI for insight
     ai_response = openai_client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4",
         messages=[
             {"role": "system", "content": "You are a precise financial trading advisor."},
             {"role": "user", "content": ai_prompt}

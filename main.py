@@ -32,13 +32,11 @@ def calculate_moving_averages(prices, short_window=50, long_window=200):
 
 def buy_stock(stock_symbol, amount):
     if MODE == "demo":
-        print_with_timestamp(f"Demo buy action for {stock_symbol} at ${amount}")
         return {"id": "demo"}
 
     if MODE == "manual":
-        confirm = input(f"Confirm buy for {stock_symbol} at {amount}$? (yes/no): ")
+        confirm = input(f"Confirm buy for {stock_symbol} at ${amount}? (yes/no): ")
         if confirm.lower() != "yes":
-            print_with_timestamp(f"Buy cancelled for {stock_symbol}")
             return {"id": "cancelled"}
 
     quote = rh.stocks.get_latest_price(stock_symbol)
@@ -47,54 +45,36 @@ def buy_stock(stock_symbol, amount):
     return rh.orders.order_buy_fractional_by_quantity(stock_symbol, quantity)
 
 
-def sell_stock(stock_symbol, quantity):
+def sell_stock(stock_symbol, amount):
     if MODE == "demo":
-        print_with_timestamp(f"Demo sell action for {stock_symbol} for {quantity} quantity")
         return {"id": "demo"}
 
     if MODE == "manual":
-        confirm = input(f"Confirm sell for {stock_symbol} for {quantity} quantity? (yes/no): ")
+        confirm = input(f"Confirm sell for {stock_symbol} at ${amount}? (yes/no): ")
         if confirm.lower() != "yes":
-            print_with_timestamp(f"Sell cancelled for {stock_symbol}")
             return {"id": "cancelled"}
 
+    quote = rh.stocks.get_latest_price(stock_symbol)
+    price = float(quote[0])
+    quantity = round(amount / price, 6)
     return rh.orders.order_sell_fractional_by_quantity(stock_symbol, quantity)
 
 
-# Make a decision to buy or sell based on AI prompt
-def make_decision(stock_symbol, stock_quantity, buying_power):
-    # Get historical data
-    prices = get_historical_data(stock_symbol)
-    if len(prices) < 200:
-        raise Exception("Not enough data to calculate moving averages")
-
-    # Calculate moving averages
-    moving_avg_50, moving_avg_200 = calculate_moving_averages(prices, short_window=50, long_window=200)
-
-    # AI prompt
+def make_decision(portfolio_overview, buying_power):
+    # AI prompt for comprehensive portfolio analysis
     ai_prompt = (
-        f"Stock symbol: {stock_symbol}\n"
-        f"Current stock price: ${prices[-1]}\n"
-        f"50-day moving average: ${moving_avg_50}\n"
-        f"200-day moving average: ${moving_avg_200}\n\n"
-        f"Your buying power is ${buying_power}.\n"
-        f"You can buy up to ${MAX_BUYING_AMOUNT_USD} but not more than {BUYING_AMOUNT_PERCENTAGE * 100}% of your buying power.\n"
-        f"Minimum buying amount is ${MIN_BUYING_AMOUNT_USD}.\n"
-        f"Remember: you can't buy stocks if you don't have enough buying power.\n\n"
-        f"Your stock quantity is {stock_quantity}.\n"
-        f"You can sell up to ${MAX_SELLING_AMOUNT_USD} but not more than {SELLING_AMOUNT_PERCENTAGE * 100}% of your stock quantity.\n"
-        f"Minimum selling amount is ${MIN_SELLING_AMOUNT_USD}.\n"
-        f"Remember: you can't sell stocks if you don't have any.\n\n"
-        f"Make a decision about {stock_symbol} based on the data above.\n"
-        "Provide a structured JSON response in this format:\n"
-        '{ "decision": "<decision>", "amount": <amount> }\n'
+        f"Analyze the following stock portfolio and suggest which stocks to sell first to increase buying power, "
+        f"and then if any stock is worth buying.\n\n"
+        f"Portfolio overview:\n{json.dumps(portfolio_overview, indent=2)}\n\n"
+        f"Total buying power: ${buying_power}.\n\n"
+        f"Provide a structured JSON response in this format:\n"
+        '[{"decision": "<decision>", "stock_symbol": "<symbol>", "amount": <amount>}, ...]\n'
         "Decision options: buy, sell, hold\n"
         "Amount is the suggested amount to buy or sell in $\n"
-        "Example: { 'decision': 'buy', 'amount': 10.0 }\n"
-        "Return only the JSON, without explanation or extra text."
+        "Return only the JSON array, without explanation or extra text."
     )
 
-    # Query OpenAI for insight
+    # Query OpenAI for decision
     ai_response = openai_client.chat.completions.create(
         model="gpt-4",
         messages=[
@@ -106,21 +86,14 @@ def make_decision(stock_symbol, stock_quantity, buying_power):
     # Clean and parse AI decision
     try:
         ai_content = re.sub(r'```json|```', '', ai_response.choices[0].message.content.strip())
-        ai_content = json.loads(ai_content)
+        decisions = json.loads(ai_content)
     except json.JSONDecodeError as e:
         raise Exception("Invalid JSON response from OpenAI: " + ai_response.choices[0].message.content.strip())
 
-    ai_decision = ai_content['decision']
-    ai_amount = float(ai_content['amount'])
-
-    # Use OpenAI decision if valid
-    if ai_decision not in ["buy", "sell", "hold"]:
-        raise Exception("Invalid decision from OpenAI" + ai_decision)
-
-    if ai_amount < 0:
-        raise Exception("Invalid amount from OpenAI: " + str(ai_amount))
-
-    return ai_decision, ai_amount
+    # Sort decisions: prioritize "sell" actions
+    sell_decisions = [d for d in decisions if d["decision"] == "sell"]
+    buy_decisions = [d for d in decisions if d["decision"] == "buy"]
+    return sell_decisions + buy_decisions
 
 
 def get_buying_power():
@@ -130,92 +103,86 @@ def get_buying_power():
 
 
 def get_my_stocks():
-    return rh.build_holdings()
-
-
-def get_watch_list_stocks(name):
-    resp = rh.get_watchlist_by_name(name)
-    return resp['results']
+    raw_holdings = rh.build_holdings()
+    portfolio = {}
+    for symbol, details in raw_holdings.items():
+        portfolio[symbol] = {k: v for k, v in details.items() if k not in ["id", "name"]}
+    return portfolio
 
 
 def trading_bot():
-    proceed_stock_symbols = set()
-    bought_stock_symbols = set()
-    sold_stock_symbols = set()
+    print_with_timestamp(f"Running trading bot in {MODE} mode...")
+
+    print_with_timestamp("Logging in to Robinhood...")
+    login_to_robinhood()
 
     print_with_timestamp("Getting my stocks to proceed...")
     my_stocks = get_my_stocks()
-    for stock_symbol in my_stocks:
-        proceed_stock_symbols.add(stock_symbol)
 
-    print_with_timestamp("Getting watchlist stocks to proceed...")
-    for watchlist_name in WATCHLIST_NAMES:
-        try:
-            watchlist_stocks = get_watch_list_stocks(watchlist_name)
-            for watchlist_stock in watchlist_stocks:
-                proceed_stock_symbols.add(watchlist_stock['symbol'])
-        except Exception as e:
-            print_with_timestamp(f"Error getting watchlist stocks for {watchlist_name}: {e}")
+    print_with_timestamp("Prepare portfolio overview for AI analysis...")
+    portfolio_overview = {}
+    for stock_symbol, stock_data in my_stocks.items():
+        prices = get_historical_data(stock_symbol)
+        if len(prices) >= 200:
+            moving_avg_50, moving_avg_200 = calculate_moving_averages(prices)
+            stock_data.update({
+                "50_day_mavg": moving_avg_50,
+                "200_day_mavg": moving_avg_200
+            })
+        portfolio_overview[stock_symbol] = stock_data
 
-    print_with_timestamp(f"Stocks to proceed: {len(proceed_stock_symbols) if proceed_stock_symbols else 'None'}")
+    try:
+        print_with_timestamp("Making AI-based decision...")
+        buying_power = get_buying_power()
+        decisions = make_decision(portfolio_overview, buying_power)
 
-    if not proceed_stock_symbols:
-        print_with_timestamp("No stocks to proceed. Exiting...")
-        return
+        print_with_timestamp("Executing sell decisions...")
+        for decision in decisions:
+            stock_symbol = decision['stock_symbol']
+            amount = decision['amount']
+            print_with_timestamp(f"{stock_symbol} > Decision: {decision['decision']} with amount ${amount}")
 
-    for stock_symbol in proceed_stock_symbols:
-        try:
-            buying_power = get_buying_power()
-            if buying_power < MIN_BUYING_AMOUNT_USD and stock_symbol not in my_stocks:
-                print_with_timestamp(f"{stock_symbol} > Skipping decision-making: not enough buying power for non-owned stock")
-                continue
-
-            stock_quantity = float(my_stocks[stock_symbol]['quantity']) if stock_symbol in my_stocks else 0.0
-
-            decision, amount = make_decision(stock_symbol, stock_quantity, buying_power)
-            print_with_timestamp(f"{stock_symbol} > Decision: {decision}, Amount: ${amount}")
-
-            if decision == "buy":
-                if amount > MAX_BUYING_AMOUNT_USD:
-                    amount = MAX_BUYING_AMOUNT_USD
-                if amount < MIN_BUYING_AMOUNT_USD:
-                    amount = MIN_BUYING_AMOUNT_USD
-                if amount > buying_power:
-                    amount = buying_power
-
-                buy_resp = buy_stock(stock_symbol, amount)
-                if 'id' in buy_resp:
-                    bought_stock_symbols.add(stock_symbol)
-                    print_with_timestamp(f"{stock_symbol} > Bought ${amount}")
-                else:
-                    print_with_timestamp(f"{stock_symbol} > Error buying ${amount}: {buy_resp}")
-
-            elif decision == "sell":
-                quote = rh.stocks.get_latest_price(stock_symbol)
-                price = float(quote[0])
-                quantity = round(amount / price, 6)
-                if quantity > stock_quantity:
-                    quantity = stock_quantity
-
-                sell_resp = sell_stock(stock_symbol, quantity)
+            if decision['decision'] == "sell":
+                sell_resp = sell_stock(stock_symbol, amount)
                 if 'id' in sell_resp:
-                    sold_stock_symbols.add(stock_symbol)
-                    print_with_timestamp(f"{stock_symbol} > Sold {quantity} quantity")
+                    if sell_resp['id'] == "demo":
+                        print_with_timestamp(f"{stock_symbol} > Demo > Sold ${amount} worth of stock")
+                    elif sell_resp['id'] == "cancelled":
+                        print_with_timestamp(f"{stock_symbol} > Sell cancelled")
+                    else:
+                        print_with_timestamp(f"{stock_symbol} > Sold ${amount} worth of stock")
                 else:
-                    print_with_timestamp(f"{stock_symbol} > Error selling {quantity} quantity: {sell_resp}")
+                    print_with_timestamp(f"{stock_symbol} > Error selling: {sell_resp}")
 
-        except Exception as e:
-            print_with_timestamp(f"{stock_symbol} > Error processing: {e}")
+        print_with_timestamp("Executing buy decisions...")
+        for decision in decisions:
+            if decision['decision'] == "buy":
+                buying_power = get_buying_power()
 
-    print_with_timestamp(f"Bought stocks: {bought_stock_symbols if bought_stock_symbols else 'None'}")
-    print_with_timestamp(f"Sold stocks: {sold_stock_symbols if sold_stock_symbols else 'None'}")
+                stock_symbol = decision['stock_symbol']
+                amount = decision['amount']
+                print_with_timestamp(f"{stock_symbol} > Decision: {decision['decision']} with amount ${amount}")
+
+                if amount <= buying_power:
+                    buy_resp = buy_stock(stock_symbol, amount)
+                    if 'id' in buy_resp:
+                        if buy_resp['id'] == "demo":
+                            print_with_timestamp(f"{stock_symbol} > Demo > Bought ${amount} worth of stock")
+                        elif buy_resp['id'] == "cancelled":
+                            print_with_timestamp(f"{stock_symbol} > Buy cancelled")
+                        else:
+                            print_with_timestamp(f"{stock_symbol} > Bought ${amount} worth of stock")
+                    else:
+                        print_with_timestamp(f"{stock_symbol} > Error buying: {buy_resp}")
+                else:
+                    print_with_timestamp(f"{stock_symbol} > Not enough buying power to buy ${amount}")
+
+    except Exception as e:
+        print_with_timestamp(f"Error in decision-making process: {e}")
 
 
 # Run the trading bot in a loop
 def main():
-    print_with_timestamp("Logging in to Robinhood...")
-    login_to_robinhood()
-
     while True:
         try:
             trading_bot()

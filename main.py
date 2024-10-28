@@ -112,18 +112,20 @@ def sell_stock(stock_symbol, amount):
 def make_decision(buying_power, portfolio_overview, watchlist_overview):
     # Updated AI prompt to include both portfolio and watchlist overviews and configuration parameters
     ai_prompt = (
-        f"Analyze the following stock portfolio and watchlist to make investment decisions. "
+        f"Analyze the stock portfolio and watchlist to make investment decisions. "
         f"Suggest which stocks to sell first from the portfolio to increase buying power, "
-        f"and then determine if any stock from either the portfolio or the watchlist is worth buying.\n\n"
+        f"and then determine if any stock from either the portfolio or the watchlist is worth buying. "
+        f"Return sell decisions in the order they should be executed to maximize buying power, "
+        f"and then provide buy decisions based on the resulting buying power.\n\n"
         f"Portfolio overview:\n{json.dumps(portfolio_overview, indent=2)}\n\n"
         f"Watchlist overview:\n{json.dumps(watchlist_overview, indent=2)}\n\n"
         f"Total buying power: ${buying_power}.\n\n"
         f"Guidelines for buy/sell amounts:\n"
-        f"- Minimum sell amount: ${MIN_SELLING_AMOUNT_USD}\n"
-        f"- Maximum sell amount: ${MAX_SELLING_AMOUNT_USD}\n"
-        f"- Minimum buy amount: ${MIN_BUYING_AMOUNT_USD}\n"
-        f"- Maximum buy amount: ${MAX_BUYING_AMOUNT_USD}\n\n"
-        f"Provide a structured JSON response in this format:\n"
+        f"- Min sell: ${MIN_SELLING_AMOUNT_USD}\n"
+        f"- Max sell: ${MAX_SELLING_AMOUNT_USD}\n"
+        f"- Min buy: ${MIN_BUYING_AMOUNT_USD}\n"
+        f"- Max buy: ${MAX_BUYING_AMOUNT_USD}\n\n"
+        f"Provide a JSON response in this format:\n"
         '[{"stock_symbol": "<symbol>", "decision": "<decision>", "amount": <amount>}, ...]\n'
         "Decision options: buy, sell, hold\n"
         "Amount is the suggested amount to buy or sell in $\n"
@@ -207,33 +209,13 @@ def trading_bot():
         buying_power = get_buying_power()
         decisions = make_decision(buying_power, portfolio_overview, watchlist_overview)
 
-        print_with_timestamp("Executing sell decisions...")
+        print_with_timestamp("Executing decisions...")
         for decision in decisions:
-            if decision['decision'] == "sell":
-                stock_symbol = decision['stock_symbol']
-                amount = decision['amount']
-                print_with_timestamp(f"{stock_symbol} > Decision: {decision['decision']} with amount ${amount}")
-                sell_resp = sell_stock(stock_symbol, amount)
-                if 'id' in sell_resp:
-                    if sell_resp['id'] == "demo":
-                        trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "sell", "result": "success", "details": "Demo mode"}
-                        print_with_timestamp(f"{stock_symbol} > Demo > Sold ${amount} worth of stock")
-                    elif sell_resp['id'] == "cancelled":
-                        trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "sell", "result": "cancelled", "details": "Cancelled by user"}
-                        print_with_timestamp(f"{stock_symbol} > Sell cancelled")
-                    else:
-                        trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "sell", "result": "success", "details": sell_resp}
-                        print_with_timestamp(f"{stock_symbol} > Sold ${amount} worth of stock")
-                else:
-                    trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "sell", "result": "error", "details": sell_resp}
-                    print_with_timestamp(f"{stock_symbol} > Error selling: {sell_resp}")
+            stock_symbol = decision['stock_symbol']
+            amount = decision['amount']
+            print_with_timestamp(f"{stock_symbol} > Decision: {decision['decision']} with amount ${amount}")
 
-        print_with_timestamp("Executing buy decisions...")
-        for decision in decisions:
             if decision['decision'] == "buy":
-                stock_symbol = decision['stock_symbol']
-                amount = decision['amount']
-                print_with_timestamp(f"{stock_symbol} > Decision: {decision['decision']} with amount ${amount}")
                 buy_resp = buy_stock(stock_symbol, amount)
                 if 'id' in buy_resp:
                     if buy_resp['id'] == "demo":
@@ -248,6 +230,22 @@ def trading_bot():
                 else:
                     trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "buy", "result": "error", "details": buy_resp}
                     print_with_timestamp(f"{stock_symbol} > Error buying: {buy_resp}")
+
+            if decision['decision'] == "sell":
+                sell_resp = sell_stock(stock_symbol, amount)
+                if 'id' in sell_resp:
+                    if sell_resp['id'] == "demo":
+                        trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "sell", "result": "success", "details": "Demo mode"}
+                        print_with_timestamp(f"{stock_symbol} > Demo > Sold ${amount} worth of stock")
+                    elif sell_resp['id'] == "cancelled":
+                        trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "sell", "result": "cancelled", "details": "Cancelled by user"}
+                        print_with_timestamp(f"{stock_symbol} > Sell cancelled")
+                    else:
+                        trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "sell", "result": "success", "details": sell_resp}
+                        print_with_timestamp(f"{stock_symbol} > Sold ${amount} worth of stock")
+                else:
+                    trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "sell", "result": "error", "details": sell_resp}
+                    print_with_timestamp(f"{stock_symbol} > Error selling: {sell_resp}")
 
     except Exception as e:
         print_with_timestamp(f"Error in decision-making process: {e}")

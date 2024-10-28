@@ -17,13 +17,18 @@ OPENAI_API_KEY = "..."                  # OpenAI API key
 ROBINHOOD_USERNAME = "..."              # Robinhood username
 ROBINHOOD_PASSWORD = "..."              # Robinhood password
 
-# Bot config parameters
+# Basic config parameters
 MODE = "demo"                           # Trading mode (demo, auto, manual)
 RUN_ON_WORKDAYS_ONLY = True             # Run bot only on workdays
 RUN_INTERVAL_SECONDS = 600              # Trading interval in seconds
-WATCHLIST_NAMES = []                    # Watchlist names
-WATCHLIST_OVERVIEW_LIMIT = 10           # Number of stocks to process in decision-making
-MAKE_POST_DECISION_ADJUSTMENTS = True   # Adjust decisions based on trading results
+
+# Robinhood config parameters
+WATCHLIST_NAMES = []                    # Watchlist names (can be empty, or "My First List", "My Second List", etc.)
+WATCHLIST_OVERVIEW_LIMIT = 10           # Number of stocks to process in decision-making (e.g. 20)
+PAUSE_BETWEEN_REQUESTS = 0.1            # Pause between Robinhood API requests in seconds to avoid rate limiting
+
+# OpenAI config params
+MAKE_POST_DECISION_ADJUSTMENTS = True   # Make adjustments to the decision after the decision is made based on the trading results
 MAX_POST_DECISION_ADJUSTMENTS = 1       # Maximum number of adjustments to make
 OPENAI_MODEL_NAME = "gpt-4o-mini"       # OpenAI model name
 
@@ -47,6 +52,12 @@ MAX_BUYING_AMOUNT_USD = 10.0            # Maximum buy amount in USD
 
     ```sh
     pip install robin_stocks openai pandas numpy
+    ```
+
+3. Clone `config.py.example` to `config.py` and fill in the required parameters:
+
+    ```sh
+    cp config.py.example config.py
     ```
 
 ## 📈 How to Run

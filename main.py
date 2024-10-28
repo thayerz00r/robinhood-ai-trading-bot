@@ -17,29 +17,9 @@ def log(msg):
     print(f"[{datetime.now()}]  {msg}")
 
 
-def get_buying_power():
-    profile_data = rh.profiles.load_account_profile()
-    buying_power = float(profile_data['buying_power'])
-    return buying_power
-
-
-def get_my_stocks():
-    return rh.build_holdings()
-
-
-def get_watchlist_stocks(name):
-    resp = rh.get_watchlist_by_name(name)
-    return resp['results']
-
-
-def get_ratings(stock_symbol):
-    return rh.stocks.get_ratings(stock_symbol)
-
-
-def get_historical_data(stock_symbol, interval="day", span="year"):
-    historical_data = rh.stocks.get_stock_historicals(stock_symbol, interval=interval, span=span)
-    prices = [float(day['close_price']) for day in historical_data]
-    return prices
+def rh_request_pause():
+    if PAUSE_BETWEEN_REQUESTS > 0:
+        time.sleep(PAUSE_BETWEEN_REQUESTS)
 
 
 def calculate_moving_averages(prices, short_window=50, long_window=200):
@@ -77,6 +57,36 @@ def enrich_with_analyst_ratings(stock_data, stock_symbol):
     return stock_data
 
 
+def get_buying_power():
+    rh_request_pause()
+    profile_data = rh.profiles.load_account_profile()
+    buying_power = float(profile_data['buying_power'])
+    return buying_power
+
+
+def get_my_stocks():
+    rh_request_pause()
+    return rh.build_holdings()
+
+
+def get_watchlist_stocks(name):
+    rh_request_pause()
+    resp = rh.get_watchlist_by_name(name)
+    return resp['results']
+
+
+def get_ratings(stock_symbol):
+    rh_request_pause()
+    return rh.stocks.get_ratings(stock_symbol)
+
+
+def get_historical_data(stock_symbol, interval="day", span="year"):
+    rh_request_pause()
+    historical_data = rh.stocks.get_stock_historicals(stock_symbol, interval=interval, span=span)
+    prices = [float(day['close_price']) for day in historical_data]
+    return prices
+
+
 def buy_stock(stock_symbol, amount):
     if MODE == "demo":
         return {"id": "demo"}
@@ -86,9 +96,11 @@ def buy_stock(stock_symbol, amount):
         if confirm.lower() != "yes":
             return {"id": "cancelled"}
 
+    rh_request_pause()
     quote = rh.stocks.get_latest_price(stock_symbol)
     price = float(quote[0])
     quantity = round(amount / price, 6)
+    rh_request_pause()
     return rh.orders.order_buy_fractional_by_quantity(stock_symbol, quantity)
 
 
@@ -101,9 +113,11 @@ def sell_stock(stock_symbol, amount):
         if confirm.lower() != "yes":
             return {"id": "cancelled"}
 
+    rh_request_pause()
     quote = rh.stocks.get_latest_price(stock_symbol)
     price = float(quote[0])
     quantity = round(amount / price, 6)
+    rh_request_pause()
     return rh.orders.order_sell_fractional_by_quantity(stock_symbol, quantity)
 
 

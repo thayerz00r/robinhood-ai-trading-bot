@@ -47,6 +47,7 @@ This is an automated trading bot for Robinhood that makes buy, sell, or hold dec
    - `RUN_INTERVAL_SECONDS` - Trading interval in seconds
    - `WATCHLIST_NAMES` - Watchlist names (can be empty, or "My First List", "My Second List", etc.)
    - `WATCHLIST_OVERVIEW_LIMIT` - Number of stocks to process in decision-making (e.g. 20)
+   - `OPENAI_MODEL_NAME` - OpenAI model name
    - `MIN_SELLING_AMOUNT_USD` - Minimum sell amount in USD
    - `MAX_SELLING_AMOUNT_USD` - Maximum sell amount in USD
    - `MIN_BUYING_AMOUNT_USD` - Minimum buy amount in USD

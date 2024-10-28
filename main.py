@@ -132,7 +132,7 @@ def make_decision(buying_power, portfolio_overview, watchlist_overview):
 
     # Query OpenAI for decision
     ai_response = openai_client.chat.completions.create(
-        model="gpt-4",
+        model=OPENAI_MODEL_NAME,
         messages=[
             {"role": "system", "content": "You are a precise financial trading advisor."},
             {"role": "user", "content": ai_prompt}

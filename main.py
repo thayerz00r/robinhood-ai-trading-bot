@@ -147,7 +147,7 @@ def make_decision(buying_power, portfolio_overview, watchlist_overview):
     ai_response = openai_client.chat.completions.create(
         model=OPENAI_MODEL_NAME,
         messages=[
-            {"role": "system", "content": "You are a precise financial trading advisor."},
+            {"role": "system", "content": "You are a precise trading robot that only responds in valid json after getting information about a stocks portfolio and watchlist."},
             {"role": "user", "content": ai_prompt}
         ]
     )
@@ -185,7 +185,7 @@ def post_decision_analysis(buying_power, trading_results):
     ai_response = openai_client.chat.completions.create(
         model=OPENAI_MODEL_NAME,
         messages=[
-            {"role": "system", "content": "You are a precise financial trading advisor."},
+            {"role": "system", "content": "You are a precise trading robot that only responds in valid json after getting information about a trading results."},
             {"role": "user", "content": ai_prompt}
         ]
     )

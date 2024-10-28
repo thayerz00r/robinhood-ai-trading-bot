@@ -1,25 +1,25 @@
 # Credentials
-OPENAI_API_KEY = "..."                  # OpenAI API key
-ROBINHOOD_USERNAME = "..."              # Robinhood username
-ROBINHOOD_PASSWORD = "..."              # Robinhood password
+OPENAI_API_KEY = "..."                      # OpenAI API key
+ROBINHOOD_USERNAME = "..."                  # Robinhood username
+ROBINHOOD_PASSWORD = "..."                  # Robinhood password
 
 # Basic config parameters
-MODE = "demo"                           # Trading mode (demo, auto, manual)
-RUN_ON_WORKDAYS_ONLY = True             # Run bot only on workdays
-RUN_INTERVAL_SECONDS = 600              # Trading interval in seconds
+MODE = "demo"                               # Trading mode (demo, auto, manual)
+RUN_ON_WORKDAYS_ONLY = True                 # Run bot only on workdays
+RUN_INTERVAL_SECONDS = 600                  # Trading interval in seconds
 
 # Robinhood config parameters
-WATCHLIST_NAMES = []                    # Watchlist names (can be empty, or "My First List", "My Second List", etc.)
-WATCHLIST_OVERVIEW_LIMIT = 10           # Number of stocks to process in decision-making (e.g. 20)
-PAUSE_BETWEEN_REQUESTS = 0.1            # Pause between Robinhood API requests in seconds to avoid rate limiting
+WATCHLIST_NAMES = []                        # Watchlist names (can be empty, or "My First List", "My Second List", etc.)
+WATCHLIST_OVERVIEW_LIMIT = 10               # Number of stocks to process in decision-making (e.g. 20)
+PAUSE_BETWEEN_ACTION_REQUESTS_SECONDS = 1   # Pause between Robinhood API sell/buy requests in seconds to avoid rate limiting
 
 # OpenAI config params
-MAKE_POST_DECISION_ADJUSTMENTS = True   # Make adjustments to the decision after the decision is made based on the trading results
-MAX_POST_DECISION_ADJUSTMENTS = 1       # Maximum number of adjustments to make
-OPENAI_MODEL_NAME = "gpt-4o-mini"       # OpenAI model name
+MAKE_POST_DECISION_ADJUSTMENTS = True       # Make adjustments to the decision after the decision is made based on the trading results
+MAX_POST_DECISION_ADJUSTMENTS = 1           # Maximum number of adjustments to make
+OPENAI_MODEL_NAME = "gpt-4o-mini"           # OpenAI model name
 
 # Trading parameters
-MIN_SELLING_AMOUNT_USD = 1.0            # Minimum sell amount in USD
-MAX_SELLING_AMOUNT_USD = 10.0           # Maximum sell amount in USD
-MIN_BUYING_AMOUNT_USD = 1.0             # Minimum buy amount in USD
-MAX_BUYING_AMOUNT_USD = 10.0            # Maximum buy amount in USD
+MIN_SELLING_AMOUNT_USD = 1.0                # Minimum sell amount in USD
+MAX_SELLING_AMOUNT_USD = 10.0               # Maximum sell amount in USD
+MIN_BUYING_AMOUNT_USD = 1.0                 # Minimum buy amount in USD
+MAX_BUYING_AMOUNT_USD = 10.0                # Maximum buy amount in USD

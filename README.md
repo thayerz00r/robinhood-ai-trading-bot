@@ -1,3 +1,9 @@
+![Jay and Silent Bob](jay_and_silent_bob.png)
+
+Fuck, fuck, fuck, motherfuck,<br />
+Rollin' stocks, makin' trades,<br />
+Time to cash in, watch those gains
+
 # 🚀 Robinhood Trading Bot 🤖
 Welcome to the **Robinhood Trading Bot**! This Python script integrates with the Robinhood trading platform and OpenAI to automate stock trading decisions based on your portfolio and watchlist.
 

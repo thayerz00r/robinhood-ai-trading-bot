@@ -24,6 +24,7 @@ RUN_INTERVAL_SECONDS = 600              # Trading interval in seconds
 WATCHLIST_NAMES = []                    # Watchlist names
 WATCHLIST_OVERVIEW_LIMIT = 10           # Number of stocks to process in decision-making
 MAKE_POST_DECISION_ADJUSTMENTS = True   # Adjust decisions based on trading results
+MAX_POST_DECISION_ADJUSTMENTS = 1       # Maximum number of adjustments to make
 OPENAI_MODEL_NAME = "gpt-4o-mini"       # OpenAI model name
 
 # Trading parameters

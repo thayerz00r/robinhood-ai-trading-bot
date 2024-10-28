@@ -246,6 +246,7 @@ def trading_bot():
 
     log(f"Total decisions: {len(decisions)}")
 
+    post_decision_adjustments = 0
     while len(decisions) > 0:
         log("Executing decisions...")
         for decision in decisions:
@@ -293,13 +294,14 @@ def trading_bot():
                     trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "sell", "result": "error", "details": str(e)}
                     log(f"{stock_symbol} > Error selling: {e}")
 
-        if not MAKE_POST_DECISION_ADJUSTMENTS:
+        if not MAKE_POST_DECISION_ADJUSTMENTS or post_decision_adjustments >= MAX_POST_DECISION_ADJUSTMENTS:
             break
 
         try:
             log("Making AI-based post-decision analysis...")
             buying_power = get_buying_power()
             decisions = post_decision_analysis(buying_power, trading_results)
+            post_decision_adjustments += 1
         except Exception as e:
             log(f"Error making post-decision analysis: {e}")
             break

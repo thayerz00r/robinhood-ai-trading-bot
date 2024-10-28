@@ -1,72 +1,96 @@
-# Robinhood Trading Bot
+# 🚀 Robinhood Trading Bot 🤖
 
-This is an automated trading bot for Robinhood that makes buy, sell, or hold decisions based on moving averages and insights from OpenAI. The bot processes stocks in your portfolio and watchlists, making decisions and executing trades accordingly.
+Welcome to the **Robinhood Trading Bot**! This Python script integrates with the Robinhood trading platform and OpenAI to automate stock trading decisions based on your portfolio and watchlist.
 
-## Features
+## 📦 Features
 
-- Automated trading based on moving averages
-- Integration with OpenAI for enhanced decision-making
-- Processes stocks in your portfolio and watchlists
-- Configurable buying and selling parameters
+- **Automated Trading Decisions**: Leverages AI to analyze your portfolio and make buy/sell recommendations.
+- **Watchlist Integration**: Monitor stocks on your watchlist and make informed decisions.
+- **Configurable Modes**: Run the bot in demo, manual, or auto mode.
+- **Post-Decision Adjustments**: The bot can refine its decisions based on trading results.
 
-## How It Works
+## ⚙️ Configuration Parameters
 
-1. **Execution Interval:**
-   - The bot runs every set number of seconds, as defined by `RUN_INTERVAL_SECONDS`.
+```python
+# Credentials
+OPENAI_API_KEY = "..."                  # OpenAI API key
+ROBINHOOD_USERNAME = "..."              # Robinhood username
+ROBINHOOD_PASSWORD = "..."              # Robinhood password
 
-2. **Stock Processing:**
-   - The bot takes the current available stocks in your portfolio and tries to make decisions based on moving averages and insights from OpenAI.
-   - It also processes stocks from your watchlists and makes decisions accordingly.
+# Bot config parameters
+MODE = "demo"                           # Trading mode (demo, auto, manual)
+RUN_ON_WORKDAYS_ONLY = True             # Run bot only on workdays
+RUN_INTERVAL_SECONDS = 600              # Trading interval in seconds
+WATCHLIST_NAMES = []                    # Watchlist names
+WATCHLIST_OVERVIEW_LIMIT = 10           # Number of stocks to process in decision-making
+MAKE_POST_DECISION_ADJUSTMENTS = True   # Adjust decisions based on trading results
+MAX_POST_DECISION_ADJUSTMENTS = 1       # Maximum number of adjustments to make
+OPENAI_MODEL_NAME = "gpt-4o-mini"       # OpenAI model name
 
-3. **Decision Making:**
-   - For each stock, the bot decides whether to buy, sell, or hold based on predefined criteria and market data.
+# Trading parameters
+MIN_SELLING_AMOUNT_USD = 1.0            # Minimum sell amount in USD
+MAX_SELLING_AMOUNT_USD = 10.0           # Maximum sell amount in USD
+MIN_BUYING_AMOUNT_USD = 1.0             # Minimum buy amount in USD
+MAX_BUYING_AMOUNT_USD = 10.0            # Maximum buy amount in USD
+```
 
-4. **Error Handling:**
-   - Any errors encountered during processing are logged with a timestamp for debugging purposes.
+## 🔑 Installation
 
-## Installation
-
-1. **Clone the repository:**
+1. Clone the repository:
 
     ```sh
     git clone https://github.com/siropkin/robinhood-trading-bot.git
     cd robinhood-trading-bot
     ```
 
-2. **Install dependencies:**
+2. Install dependencies:
 
     ```sh
-    pip install robin_stocks openai pandas
+    pip install robin_stocks openai pandas numpy
     ```
 
-3. **Configure the bot:**
+## 📈 How to Run
 
-   You can configure the bot by modifying the global variables in `config.py`:
-   - `MODE`: Trading mode: demo, auto, manual. In demo mode, the bot will not execute trades, only log them. In auto mode, the bot will execute trades automatically. In manual mode, the bot will prompt the user to confirm trades.
-   - `RUN_INTERVAL_SECONDS`: Interval for running the bot, in seconds
-   - `OPENAI_API_KEY`: OpenAI API key
-   - `ROBINHOOD_USERNAME`: Robinhood username (email address used for login)
-   - `ROBINHOOD_PASSWORD`: Robinhood password
-   - `WATCHLIST_NAMES`: Watchlist names to get stocks from
-   - `BUYING_AMOUNT_PERCENTAGE`: Default percentage of buying power that will be used for buying stocks
-   - `MIN_BUYING_AMOUNT_USD`: Minimum amount to buy in dollars
-   - `MAX_BUYING_AMOUNT_USD`: Maximum amount to buy in dollars
-   - `SELLING_AMOUNT_PERCENTAGE`: Default percentage of holding that will be sold at once
-   - `MIN_SELLING_AMOUNT_USD`: Minimum amount to sell in dollars
-   - `MAX_SELLING_AMOUNT_USD`: Maximum amount to sell in dollars
+To start the bot, run the following command in your terminal:
 
-## Usage
+   ```sh
+   python main.py
+   ```
 
-1. **Run the trading bot:**
+## 💬 How It Works
 
-    ```sh
-    python main.py
-    ```
+1. Login to OpenAI: The bot logs into OpenAI using your API key.
 
-## Disclaimer
+2. Login to Robinhood: The bot logs into your Robinhood account using your credentials.
+
+3. Fetch Stocks: It retrieves your current stock holdings and watchlist stocks.
+
+4. AI Analysis: Using OpenAI, it analyzes your portfolio and watchlist to make informed trading decisions.
+
+5. Execute Trades: Based on the AI's recommendations, the bot will execute buy/sell orders.
+
+6. Post-Decision Adjustments: The bot can adjust its decisions based on the outcome of the trades.
+
+
+## ⚠️ Disclaimer
 
 This bot is for educational purposes only. Trading stocks involves risk, and you should only trade with money you can afford to lose. The author is not responsible for any financial losses you may incur.
 
-## License
+## 📄 License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+
+## 🤝 Contributing
+
+Feel free to submit pull requests or open issues if you have suggestions or improvements!
+
+
+## 📧 Contact
+
+If you have any questions or feedback, feel free to reach out at [ivan.seredkin@gmail.com](mailto:ivan.seredkin@gmail.com).
+
+
+## 📈
+Happy Trading! 💰📈
+

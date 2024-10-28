@@ -17,9 +17,9 @@ def log(msg):
     print(f"[{datetime.now()}]  {msg}")
 
 
-def rh_request_pause():
-    if PAUSE_BETWEEN_REQUESTS > 0:
-        time.sleep(PAUSE_BETWEEN_REQUESTS)
+def rh_action_request_pause():
+    if PAUSE_BETWEEN_ACTION_REQUESTS_SECONDS > 0:
+        time.sleep(PAUSE_BETWEEN_ACTION_REQUESTS_SECONDS)
 
 
 def calculate_moving_averages(prices, short_window=50, long_window=200):
@@ -58,30 +58,25 @@ def enrich_with_analyst_ratings(stock_data, stock_symbol):
 
 
 def get_buying_power():
-    rh_request_pause()
     profile_data = rh.profiles.load_account_profile()
     buying_power = float(profile_data['buying_power'])
     return buying_power
 
 
 def get_my_stocks():
-    rh_request_pause()
     return rh.build_holdings()
 
 
 def get_watchlist_stocks(name):
-    rh_request_pause()
     resp = rh.get_watchlist_by_name(name)
     return resp['results']
 
 
 def get_ratings(stock_symbol):
-    rh_request_pause()
     return rh.stocks.get_ratings(stock_symbol)
 
 
 def get_historical_data(stock_symbol, interval="day", span="year"):
-    rh_request_pause()
     historical_data = rh.stocks.get_stock_historicals(stock_symbol, interval=interval, span=span)
     prices = [float(day['close_price']) for day in historical_data]
     return prices
@@ -96,11 +91,10 @@ def buy_stock(stock_symbol, amount):
         if confirm.lower() != "yes":
             return {"id": "cancelled"}
 
-    rh_request_pause()
     quote = rh.stocks.get_latest_price(stock_symbol)
     price = float(quote[0])
     quantity = round(amount / price, 6)
-    rh_request_pause()
+    rh_action_request_pause()
     return rh.orders.order_buy_fractional_by_quantity(stock_symbol, quantity)
 
 
@@ -113,11 +107,10 @@ def sell_stock(stock_symbol, amount):
         if confirm.lower() != "yes":
             return {"id": "cancelled"}
 
-    rh_request_pause()
     quote = rh.stocks.get_latest_price(stock_symbol)
     price = float(quote[0])
     quantity = round(amount / price, 6)
-    rh_request_pause()
+    rh_action_request_pause()
     return rh.orders.order_sell_fractional_by_quantity(stock_symbol, quantity)
 
 
@@ -271,7 +264,7 @@ def trading_bot():
             if decision['decision'] == "buy":
                 try:
                     buy_resp = buy_stock(stock_symbol, amount)
-                    if 'id' in buy_resp:
+                    if buy_resp and 'id' in buy_resp:
                         if buy_resp['id'] == "demo":
                             trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "buy", "result": "success", "details": "Demo mode"}
                             log(f"{stock_symbol} > Demo > Bought ${amount} worth of stock")
@@ -282,6 +275,8 @@ def trading_bot():
                             trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "buy", "result": "success", "details": buy_resp}
                             log(f"{stock_symbol} > Bought ${amount} worth of stock")
                     else:
+                        if buy_resp is None:
+                            buy_resp = "No response"
                         trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "buy", "result": "error", "details": buy_resp}
                         log(f"{stock_symbol} > Error buying: {buy_resp}")
                 except Exception as e:
@@ -291,7 +286,7 @@ def trading_bot():
             if decision['decision'] == "sell":
                 try:
                     sell_resp = sell_stock(stock_symbol, amount)
-                    if 'id' in sell_resp:
+                    if sell_resp and 'id' in sell_resp:
                         if sell_resp['id'] == "demo":
                             trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "sell", "result": "success", "details": "Demo mode"}
                             log(f"{stock_symbol} > Demo > Sold ${amount} worth of stock")
@@ -299,6 +294,8 @@ def trading_bot():
                             trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "sell", "result": "cancelled", "details": "Cancelled by user"}
                             log(f"{stock_symbol} > Sell cancelled")
                         else:
+                            if sell_resp is None:
+                                sell_resp = "No response"
                             trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "sell", "result": "success", "details": sell_resp}
                             log(f"{stock_symbol} > Sold ${amount} worth of stock")
                     else:

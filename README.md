@@ -283,7 +283,7 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ## 🤝 Contributing
 I'm genuinely excited to welcome contributors! 
-Whether you're interested in refining the logging system, enhancing AI-prompt strategies, or enriching stock data—there’s room for your ideas and expertise. 
+Whether you're interested in refining the logging system, enhancing AI-prompt strategies, or enriching stock data — there’s room for your ideas and expertise. 
 Feel free to submit pull requests or open issues with suggestions and improvements!
 
 

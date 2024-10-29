@@ -270,9 +270,6 @@ def trading_bot():
                     else:
                         if buy_resp is None:
                             buy_resp = "No response"
-                            # Pause to avoid rate limiting
-                            if PAUSE_BETWEEN_ACTION_REQUESTS_SECONDS > 0:
-                                time.sleep(PAUSE_BETWEEN_ACTION_REQUESTS_SECONDS)
                         trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "buy", "result": "error", "details": buy_resp}
                         log(f"{stock_symbol} > Error buying: {buy_resp}")
                 except Exception as e:
@@ -292,9 +289,6 @@ def trading_bot():
                         else:
                             if sell_resp is None:
                                 sell_resp = "No response"
-                                # Pause to avoid rate limiting
-                                if PAUSE_BETWEEN_ACTION_REQUESTS_SECONDS > 0:
-                                    time.sleep(PAUSE_BETWEEN_ACTION_REQUESTS_SECONDS)
                             trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "sell", "result": "success", "details": sell_resp}
                             log(f"{stock_symbol} > Sold ${amount} worth of stock")
                     else:

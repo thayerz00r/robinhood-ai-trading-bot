@@ -1,4 +1,4 @@
-![Jay and Silent Bob](jay_and_silent_bob.png)
+![Jay and Silent Bob](images/jay_and_silent_bob.png)
 
 Fuck, fuck, fuck, motherfuck,<br />
 Rollin' stocks, makin' trades,<br />
@@ -60,7 +60,7 @@ The bot's analytical system incorporates moving averages and Robinhood analyst r
 
 This is Robinhood's analyst rating system example:
 
-![Robinhood Analyst Ratings](robinhood_analyst_ratings.png)
+![Robinhood Analyst Ratings](images/robinhood_analyst_ratings.png)
 
 
 #### AI-Powered Decision-Making System
@@ -222,8 +222,8 @@ Log example:
 ### Install
 1. Clone the repository:
     ```sh
-    git clone https://github.com/siropkin/robinhood-trading-bot.git
-    cd robinhood-trading-bot
+    git clone https://github.com/siropkin/robinhood-ai-trading-bot.git
+    cd robinhood-ai-trading-bot
     ```
 
 2. Install dependencies:
@@ -253,6 +253,8 @@ RUN_INTERVAL_SECONDS = 600                  # Trading interval in seconds
 # Robinhood config parameters
 WATCHLIST_NAMES = []                        # Watchlist names (can be empty, or "My First List", "My Second List", etc.)
 WATCHLIST_OVERVIEW_LIMIT = 10               # Number of stocks to process in decision-making (e.g. 20)
+MIN_API_CALL_PAUSE_MS = 500                 # Minimum pause between Robinhood API calls in milliseconds (to avoid rate limits)
+MAX_API_CALL_PAUSE_MS = 1500                # Maximum pause between Robinhood API calls in milliseconds (to avoid rate limits)
 
 # OpenAI config params
 MAX_POST_DECISION_ADJUSTMENTS = 1           # Maximum number of adjustments to make (0 - disable adjustments)

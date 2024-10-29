@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 import json
 import re
+import random
 from config import *
 
 # Initialize session and login
@@ -15,6 +16,11 @@ rh.login(ROBINHOOD_USERNAME, ROBINHOOD_PASSWORD)
 
 def log(msg):
     print(f"[{datetime.now()}]  {msg}")
+
+
+def random_pause(min_ms=MIN_API_CALL_PAUSE_MS, max_ms=MAX_API_CALL_PAUSE_MS):
+    delay_ms = random.uniform(min_ms, max_ms)
+    time.sleep(delay_ms / 1000)
 
 
 def calculate_moving_averages(prices, short_window=50, long_window=200):
@@ -53,27 +59,44 @@ def enrich_with_analyst_ratings(stock_data, stock_symbol):
 
 
 def get_buying_power():
-    profile_data = rh.profiles.load_account_profile()
-    buying_power = float(profile_data['buying_power'])
+    random_pause()
+    resp = rh.profiles.load_account_profile()
+    if resp is None or 'buying_power' not in resp:
+        raise Exception("Error getting profile data: No response")
+    buying_power = float(resp['buying_power'])
     return buying_power
 
 
 def get_my_stocks():
-    return rh.build_holdings()
+    random_pause()
+    resp = rh.build_holdings()
+    if resp is None:
+        raise Exception("Error getting holdings data: No response")
+    return resp
 
 
 def get_watchlist_stocks(name):
+    random_pause()
     resp = rh.get_watchlist_by_name(name)
+    if resp is None or 'results' not in resp:
+        raise Exception(f"Error getting watchlist {name}: No response")
     return resp['results']
 
 
 def get_ratings(stock_symbol):
-    return rh.stocks.get_ratings(stock_symbol)
+    random_pause()
+    resp = rh.stocks.get_ratings(stock_symbol)
+    if resp is None:
+        raise Exception(f"Error getting ratings for {stock_symbol}: No response")
+    return resp
 
 
 def get_historical_data(stock_symbol, interval="day", span="year"):
-    historical_data = rh.stocks.get_stock_historicals(stock_symbol, interval=interval, span=span)
-    prices = [float(day['close_price']) for day in historical_data]
+    random_pause()
+    resp = rh.stocks.get_stock_historicals(stock_symbol, interval=interval, span=span)
+    if resp is None:
+        raise Exception(f"Error getting historical data for {stock_symbol}: No response")
+    prices = [float(day['close_price']) for day in resp]
     return prices
 
 
@@ -86,15 +109,18 @@ def buy_stock(stock_symbol, amount):
         if confirm.lower() != "yes":
             return {"id": "cancelled"}
 
-    quote = rh.stocks.get_latest_price(stock_symbol)
-    if len(quote) == 0:
+    random_pause()
+    price_resp = rh.stocks.get_latest_price(stock_symbol)
+    if len(price_resp) == 0 or price_resp[0] is None:
         raise Exception(f"Error getting quote for {stock_symbol}: No response")
-    price = float(quote[0])
+    price = float(price_resp[0])
     quantity = round(amount / price, 6)
-    resp = rh.orders.order_buy_fractional_by_quantity(stock_symbol, quantity)
-    if resp is None:
+
+    random_pause()
+    buy_resp = rh.orders.order_buy_fractional_by_quantity(stock_symbol, quantity)
+    if buy_resp is None:
         raise Exception(f"Error buying {stock_symbol}: No response")
-    return resp
+    return buy_resp
 
 
 def sell_stock(stock_symbol, amount):
@@ -106,15 +132,18 @@ def sell_stock(stock_symbol, amount):
         if confirm.lower() != "yes":
             return {"id": "cancelled"}
 
-    quote = rh.stocks.get_latest_price(stock_symbol)
-    if len(quote) == 0:
+    random_pause()
+    price_resp = rh.stocks.get_latest_price(stock_symbol)
+    if len(price_resp) == 0 or price_resp[0] is None:
         raise Exception(f"Error getting quote for {stock_symbol}: No response")
-    price = float(quote[0])
+    price = float(price_resp[0])
     quantity = round(amount / price, 6)
-    resp = rh.orders.order_sell_fractional_by_quantity(stock_symbol, quantity)
-    if resp is None:
+
+    random_pause()
+    buy_resp = rh.orders.order_sell_fractional_by_quantity(stock_symbol, quantity)
+    if buy_resp is None:
         raise Exception(f"Error selling {stock_symbol}: No response")
-    return resp
+    return buy_resp
 
 
 def make_decision(buying_power, portfolio_overview, watchlist_overview):

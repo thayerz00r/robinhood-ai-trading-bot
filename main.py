@@ -273,9 +273,11 @@ def trading_bot():
         watchlist_overview[stock_symbol] = enrich_with_moving_averages(watchlist_overview[stock_symbol], stock_symbol)
         watchlist_overview[stock_symbol] = enrich_with_analyst_ratings(watchlist_overview[stock_symbol], stock_symbol)
 
-    trading_results = {}
-    decisions = []
+    if len(portfolio_overview) == 0 and len(watchlist_overview) == 0:
+        log("No stocks to analyze, skipping AI-based decision-making...")
+        return {}
 
+    decisions = []
     try:
         log("Making AI-based decision...")
         buying_power = get_buying_power()
@@ -285,6 +287,7 @@ def trading_bot():
 
     log(f"Total decisions: {len(decisions)}")
 
+    trading_results = {}
     post_decision_adjustments_count = 0
     while len(decisions) > 0:
         log("Executing decisions...")

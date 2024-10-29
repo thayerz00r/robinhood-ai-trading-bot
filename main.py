@@ -17,11 +17,6 @@ def log(msg):
     print(f"[{datetime.now()}]  {msg}")
 
 
-def rh_action_request_pause():
-    if PAUSE_BETWEEN_ACTION_REQUESTS_SECONDS > 0:
-        time.sleep(PAUSE_BETWEEN_ACTION_REQUESTS_SECONDS)
-
-
 def calculate_moving_averages(prices, short_window=50, long_window=200):
     short_mavg = pd.Series(prices).rolling(window=short_window).mean().iloc[-1]
     long_mavg = pd.Series(prices).rolling(window=long_window).mean().iloc[-1]
@@ -94,7 +89,6 @@ def buy_stock(stock_symbol, amount):
     quote = rh.stocks.get_latest_price(stock_symbol)
     price = float(quote[0])
     quantity = round(amount / price, 6)
-    rh_action_request_pause()
     return rh.orders.order_buy_fractional_by_quantity(stock_symbol, quantity)
 
 
@@ -110,7 +104,6 @@ def sell_stock(stock_symbol, amount):
     quote = rh.stocks.get_latest_price(stock_symbol)
     price = float(quote[0])
     quantity = round(amount / price, 6)
-    rh_action_request_pause()
     return rh.orders.order_sell_fractional_by_quantity(stock_symbol, quantity)
 
 
@@ -277,6 +270,9 @@ def trading_bot():
                     else:
                         if buy_resp is None:
                             buy_resp = "No response"
+                            # Pause to avoid rate limiting
+                            if PAUSE_BETWEEN_ACTION_REQUESTS_SECONDS > 0:
+                                time.sleep(PAUSE_BETWEEN_ACTION_REQUESTS_SECONDS)
                         trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "buy", "result": "error", "details": buy_resp}
                         log(f"{stock_symbol} > Error buying: {buy_resp}")
                 except Exception as e:
@@ -296,6 +292,9 @@ def trading_bot():
                         else:
                             if sell_resp is None:
                                 sell_resp = "No response"
+                                # Pause to avoid rate limiting
+                                if PAUSE_BETWEEN_ACTION_REQUESTS_SECONDS > 0:
+                                    time.sleep(PAUSE_BETWEEN_ACTION_REQUESTS_SECONDS)
                             trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "sell", "result": "success", "details": sell_resp}
                             log(f"{stock_symbol} > Sold ${amount} worth of stock")
                     else:

@@ -87,9 +87,14 @@ def buy_stock(stock_symbol, amount):
             return {"id": "cancelled"}
 
     quote = rh.stocks.get_latest_price(stock_symbol)
+    if len(quote) == 0:
+        raise Exception(f"Error getting quote for {stock_symbol}: No response")
     price = float(quote[0])
     quantity = round(amount / price, 6)
-    return rh.orders.order_buy_fractional_by_quantity(stock_symbol, quantity)
+    resp = rh.orders.order_buy_fractional_by_quantity(stock_symbol, quantity)
+    if resp is None:
+        raise Exception(f"Error buying {stock_symbol}: No response")
+    return resp
 
 
 def sell_stock(stock_symbol, amount):
@@ -102,9 +107,14 @@ def sell_stock(stock_symbol, amount):
             return {"id": "cancelled"}
 
     quote = rh.stocks.get_latest_price(stock_symbol)
+    if len(quote) == 0:
+        raise Exception(f"Error getting quote for {stock_symbol}: No response")
     price = float(quote[0])
     quantity = round(amount / price, 6)
-    return rh.orders.order_sell_fractional_by_quantity(stock_symbol, quantity)
+    resp = rh.orders.order_sell_fractional_by_quantity(stock_symbol, quantity)
+    if resp is None:
+        raise Exception(f"Error selling {stock_symbol}: No response")
+    return resp
 
 
 def make_decision(buying_power, portfolio_overview, watchlist_overview):
@@ -268,11 +278,6 @@ def trading_bot():
                             trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "buy", "result": "success", "details": buy_resp}
                             log(f"{stock_symbol} > Bought ${amount} worth of stock")
                     else:
-                        if buy_resp is None:
-                            buy_resp = "No response"
-                            # Pause to avoid rate limiting
-                            if PAUSE_BETWEEN_ACTION_REQUESTS_SECONDS > 0:
-                                time.sleep(PAUSE_BETWEEN_ACTION_REQUESTS_SECONDS)
                         trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "buy", "result": "error", "details": buy_resp}
                         log(f"{stock_symbol} > Error buying: {buy_resp}")
                 except Exception as e:
@@ -290,11 +295,6 @@ def trading_bot():
                             trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "sell", "result": "cancelled", "details": "Cancelled by user"}
                             log(f"{stock_symbol} > Sell cancelled")
                         else:
-                            if sell_resp is None:
-                                sell_resp = "No response"
-                                # Pause to avoid rate limiting
-                                if PAUSE_BETWEEN_ACTION_REQUESTS_SECONDS > 0:
-                                    time.sleep(PAUSE_BETWEEN_ACTION_REQUESTS_SECONDS)
                             trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "sell", "result": "success", "details": sell_resp}
                             log(f"{stock_symbol} > Sold ${amount} worth of stock")
                     else:

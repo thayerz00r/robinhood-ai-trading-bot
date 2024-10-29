@@ -1,4 +1,4 @@
-![Jay and Silent Bob](jay_and_silent_bob.png)
+![Jay and Silent Bob](images/jay_and_silent_bob.png)
 
 Fuck, fuck, fuck, motherfuck,<br />
 Rollin' stocks, makin' trades,<br />
@@ -60,7 +60,7 @@ The bot's analytical system incorporates moving averages and Robinhood analyst r
 
 This is Robinhood's analyst rating system example:
 
-![Robinhood Analyst Ratings](robinhood_analyst_ratings.png)
+![Robinhood Analyst Ratings](images/robinhood_analyst_ratings.png)
 
 
 #### AI-Powered Decision-Making System

@@ -222,8 +222,8 @@ Log example:
 ### Install
 1. Clone the repository:
     ```sh
-    git clone https://github.com/siropkin/robinhood-trading-bot.git
-    cd robinhood-trading-bot
+    git clone https://github.com/siropkin/robinhood-ai-trading-bot.git
+    cd robinhood-ai-trading-bot
     ```
 
 2. Install dependencies:

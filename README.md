@@ -124,8 +124,9 @@ Return only the JSON array, without explanation or extra text. If no decisions a
 AI-response example:
 ```
 [
-    {"stock_symbol": "AAPL", "decision": "sell", "amount": 1.0},
-    {"stock_symbol": "EQIX", "decision": "buy", "amount": 1.0},
+    {"symbol": "AAPL", "decision": "sell", "amount": 1.0},
+    {"symbol": "EQIX", "decision": "buy", "amount": 1.0},
+    {"symbol": "BL", "decision": "hold", "amount": 0.0},
     ...
 ]
 ```
@@ -142,32 +143,44 @@ Analyze the trading results based on your previous decisions. Make adjustments i
 
 Trading results:
 {
+ "AAPL": {
+  "symbol": "AAPL",
+  "amount": 2.5,
+  "decision": "sell",
+  "result": "error",
+  "details": {
+   "detail": "Not enough shares to sell."
+  }
+ },
  "BLIN": {
   "symbol": "BLIN",
-  "amount": 1.11,
-  "decision": "sell",
+  "amount": 1.5,
+  "decision": "buy",
   "result": "error",
   "details": {
    "detail": "You cannot open new fractional positions on this stock."
   }
  },
- "PCTY": {
-  "symbol": "PCTY",
-  "amount": 1.0,
+ "BCOV": {
+  "symbol": "BCOV",
+  "amount": 1.5,
   "decision": "buy",
-  "result": "error",
+  "result": "success",
   "details": {
-   "detail": "You can only purchase 0 shares of PCTY."
+   "quantity": 0.672646,
+   "price": 2.24,
+   "fees": 0.0
   }
- }
+ },
+ ...
 }
 
-Total buying power: $0.09.
+Total buying power: $1.01.
 
 Guidelines for buy/sell amounts:
-- Min sell: $1.0
+- Min sell: $1.5
 - Max sell: $150.0
-- Min buy: $1.0
+- Min buy: $1.5
 - Max buy: $150.0
 
 Provide a JSON response in this format:
@@ -179,7 +192,10 @@ Return only the JSON array, without explanation or extra text. If no decisions a
 
 AI-response example:
 ```
-[]
+[
+    {"symbol": "AAPL", "decision": "sell", "amount": 1.5},
+    ...
+]
 ```
 
 

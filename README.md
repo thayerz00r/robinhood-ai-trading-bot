@@ -284,7 +284,7 @@ Feel free to submit pull requests or open issues with suggestions and improvemen
 
 
 ## 📧 Contact
-If you have any questions or feedback, feel free to reach out at [ivan.seredkin@gmail.com](mailto:ivan.seredkin@gmail.com).
+If you have any questions or feedback, feel free to reach out at [goodbotty@proton.me](mailto:goodbotty@proton.me).
 
 
 ## 📢 One Day In The Life Of The Good Bot

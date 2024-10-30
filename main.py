@@ -110,6 +110,17 @@ def get_historical_data(symbol, interval="day", span="year"):
     return prices
 
 
+# Convert amount to quantity based on stock price
+def amount_to_quantity(symbol, amount):
+    random_pause()
+    price_resp = rh.stocks.get_latest_price(symbol)
+    if len(price_resp) == 0 or price_resp[0] is None:
+        raise Exception(f"Error getting quote for {symbol}: No response")
+    price = float(price_resp[0])
+    quantity = round(amount / price, 6)
+    return quantity
+
+
 # Buy a stock by symbol and amount
 def buy_stock(symbol, amount):
     if MODE == "demo":
@@ -120,13 +131,7 @@ def buy_stock(symbol, amount):
         if confirm.lower() != "yes":
             return {"id": "cancelled"}
 
-    random_pause()
-    price_resp = rh.stocks.get_latest_price(symbol)
-    if len(price_resp) == 0 or price_resp[0] is None:
-        raise Exception(f"Error getting quote for {symbol}: No response")
-    price = float(price_resp[0])
-    quantity = round(amount / price, 6)
-
+    quantity = amount_to_quantity(symbol, amount)
     random_pause()
     buy_resp = rh.orders.order_buy_fractional_by_quantity(symbol, quantity)
     if buy_resp is None:
@@ -135,7 +140,7 @@ def buy_stock(symbol, amount):
 
 
 # Sell a stock by symbol and amount
-def sell_stock(symbol, amount):
+def sell_stock(symbol, amount, available_quantity):
     if MODE == "demo":
         return {"id": "demo"}
 
@@ -144,18 +149,14 @@ def sell_stock(symbol, amount):
         if confirm.lower() != "yes":
             return {"id": "cancelled"}
 
+    quantity = amount_to_quantity(symbol, amount)
+    if quantity > available_quantity:
+        quantity = available_quantity
     random_pause()
-    price_resp = rh.stocks.get_latest_price(symbol)
-    if len(price_resp) == 0 or price_resp[0] is None:
-        raise Exception(f"Error getting quote for {symbol}: No response")
-    price = float(price_resp[0])
-    quantity = round(amount / price, 6)
-
-    random_pause()
-    buy_resp = rh.orders.order_sell_fractional_by_quantity(symbol, quantity)
-    if buy_resp is None:
+    sell_resp = rh.orders.order_sell_fractional_by_quantity(symbol, quantity)
+    if sell_resp is None:
         raise Exception(f"Error selling {symbol}: No response")
-    return buy_resp
+    return sell_resp
 
 
 # Make AI-based decisions on stock portfolio and watchlist
@@ -312,6 +313,33 @@ def trading_bot():
             amount = decision_data['amount']
             log(f"{symbol} > Decision: {decision} with amount ${amount}")
 
+            if decision == "sell":
+                try:
+                    available_quantity = float(portfolio_overview[symbol]['quantity'])
+                    sell_resp = sell_stock(symbol, amount, available_quantity)
+                    if sell_resp and 'id' in sell_resp:
+                        if sell_resp['id'] == "demo":
+                            trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "sell", "result": "success", "details": "Demo mode"}
+                            log(f"{symbol} > Demo > Sold ${amount} worth of stock")
+                        elif sell_resp['id'] == "cancelled":
+                            trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "sell", "result": "cancelled", "details": "Cancelled by user"}
+                            log(f"{symbol} > Sell cancelled by user")
+                        else:
+                            details = {
+                                "quantity": sell_resp['quantity'],
+                                "price": sell_resp['price'],
+                                "fees": sell_resp['fees'],
+                            }
+                            trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "sell", "result": "success", "details": details}
+                            log(f"{symbol} > Sold ${amount} worth of stock")
+                    else:
+                        details = sell_resp['detail'] if 'detail' in sell_resp else sell_resp
+                        trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "sell", "result": "error", "details": details}
+                        log(f"{symbol} > Error selling: {details}")
+                except Exception as e:
+                    trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "sell", "result": "error", "details": str(e)}
+                    log(f"{symbol} > Error selling: {e}")
+
             if decision == "buy":
                 try:
                     buy_resp = buy_stock(symbol, amount)
@@ -323,34 +351,20 @@ def trading_bot():
                             trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "buy", "result": "cancelled", "details": "Cancelled by user"}
                             log(f"{symbol} > Buy cancelled by user")
                         else:
-                            trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "buy", "result": "success", "details": buy_resp}
+                            details = {
+                                "quantity": buy_resp['quantity'],
+                                "price": buy_resp['price'],
+                                "fees": buy_resp['fees'],
+                            }
+                            trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "buy", "result": "success", "details": details}
                             log(f"{symbol} > Bought ${amount} worth of stock")
                     else:
-                        trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "buy", "result": "error", "details": buy_resp}
-                        log(f"{symbol} > Error buying: {buy_resp}")
+                        details = buy_resp['detail'] if 'detail' in buy_resp else buy_resp
+                        trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "buy", "result": "error", "details": details}
+                        log(f"{symbol} > Error buying: {details}")
                 except Exception as e:
                     trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "buy", "result": "error", "details": str(e)}
                     log(f"{symbol} > Error buying: {e}")
-
-            if decision == "sell":
-                try:
-                    sell_resp = sell_stock(symbol, amount)
-                    if sell_resp and 'id' in sell_resp:
-                        if sell_resp['id'] == "demo":
-                            trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "sell", "result": "success", "details": "Demo mode"}
-                            log(f"{symbol} > Demo > Sold ${amount} worth of stock")
-                        elif sell_resp['id'] == "cancelled":
-                            trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "sell", "result": "cancelled", "details": "Cancelled by user"}
-                            log(f"{symbol} > Sell cancelled by user")
-                        else:
-                            trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "sell", "result": "success", "details": sell_resp}
-                            log(f"{symbol} > Sold ${amount} worth of stock")
-                    else:
-                        trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "sell", "result": "error", "details": sell_resp}
-                        log(f"{symbol} > Error selling: {sell_resp}")
-                except Exception as e:
-                    trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "sell", "result": "error", "details": str(e)}
-                    log(f"{symbol} > Error selling: {e}")
 
         if post_decisions_adjustment_count >= MAX_POST_DECISIONS_ADJUSTMENTS:
             break

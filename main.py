@@ -323,15 +323,17 @@ def trading_bot():
                             trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "buy", "result": "cancelled", "details": "Cancelled by user"}
                             log(f"{symbol} > Buy cancelled by user")
                         else:
-                            trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "buy", "result": "success", "details": {
+                            details = {
                                 "quantity": float(buy_resp['quantity']),
                                 "price": float(buy_resp['price']),
                                 "fees": float(buy_resp['fees']),
-                            }}
+                            }
+                            trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "buy", "result": "success", "details": details}
                             log(f"{symbol} > Bought ${amount} worth of stock")
                     else:
-                        trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "buy", "result": "error", "details": buy_resp}
-                        log(f"{symbol} > Error buying: {buy_resp}")
+                        details = buy_resp['detail'] if 'detail' in buy_resp else buy_resp
+                        trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "buy", "result": "error", "details": details}
+                        log(f"{symbol} > Error buying: {details}")
                 except Exception as e:
                     trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "buy", "result": "error", "details": str(e)}
                     log(f"{symbol} > Error buying: {e}")
@@ -347,15 +349,17 @@ def trading_bot():
                             trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "sell", "result": "cancelled", "details": "Cancelled by user"}
                             log(f"{symbol} > Sell cancelled by user")
                         else:
-                            trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "sell", "result": "success", "details": {
+                            details = {
                                 "quantity": float(sell_resp['quantity']),
                                 "price": float(sell_resp['price']),
                                 "fees": float(sell_resp['fees']),
-                            }}
+                            }
+                            trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "sell", "result": "success", "details": details}
                             log(f"{symbol} > Sold ${amount} worth of stock")
                     else:
-                        trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "sell", "result": "error", "details": sell_resp}
-                        log(f"{symbol} > Error selling: {sell_resp}")
+                        details = sell_resp['detail'] if 'detail' in sell_resp else sell_resp
+                        trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "sell", "result": "error", "details": details}
+                        log(f"{symbol} > Error selling: {details}")
                 except Exception as e:
                     trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "sell", "result": "error", "details": str(e)}
                     log(f"{symbol} > Error selling: {e}")

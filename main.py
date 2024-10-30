@@ -14,21 +14,25 @@ openai_client = OpenAI(api_key=OPENAI_API_KEY)
 rh.login(ROBINHOOD_USERNAME, ROBINHOOD_PASSWORD)
 
 
+# Print log message with timestamp
 def log(msg):
     print(f"[{datetime.now()}]  {msg}")
 
 
+# Random pause between API calls
 def random_pause(min_seconds=MIN_API_CALL_PAUSE_SECONDS, max_seconds=MAX_API_CALL_PAUSE_SECONDS):
     delay = random.uniform(min_seconds, max_seconds)
     time.sleep(delay)
 
 
+# Calculate moving averages for stock prices
 def calculate_moving_averages(prices, short_window=50, long_window=200):
     short_mavg = pd.Series(prices).rolling(window=short_window).mean().iloc[-1]
     long_mavg = pd.Series(prices).rolling(window=long_window).mean().iloc[-1]
     return round(short_mavg, 2), round(long_mavg, 2)
 
 
+# Enrich stock data with moving averages
 def enrich_with_moving_averages(stock_data, symbol):
     prices = get_historical_data(symbol)
     if len(prices) >= 200:
@@ -38,6 +42,7 @@ def enrich_with_moving_averages(stock_data, symbol):
     return stock_data
 
 
+# Get analyst ratings for a stock by symbol
 def enrich_with_analyst_ratings(stock_data, symbol):
     ratings = get_ratings(symbol)
     if 'ratings' in ratings and len(ratings['ratings']) > 0:
@@ -58,6 +63,7 @@ def enrich_with_analyst_ratings(stock_data, symbol):
     return stock_data
 
 
+# Get my buying power
 def get_buying_power():
     random_pause()
     resp = rh.profiles.load_account_profile()
@@ -67,6 +73,7 @@ def get_buying_power():
     return buying_power
 
 
+# Get my stocks
 def get_my_stocks():
     random_pause()
     resp = rh.build_holdings()
@@ -75,6 +82,7 @@ def get_my_stocks():
     return resp
 
 
+# Get watchlist stocks by name
 def get_watchlist_stocks(name):
     random_pause()
     resp = rh.get_watchlist_by_name(name)
@@ -83,6 +91,7 @@ def get_watchlist_stocks(name):
     return resp['results']
 
 
+# Get analyst ratings for a stock by symbol
 def get_ratings(symbol):
     random_pause()
     resp = rh.stocks.get_ratings(symbol)
@@ -91,6 +100,7 @@ def get_ratings(symbol):
     return resp
 
 
+# Get historical stock data by symbol
 def get_historical_data(symbol, interval="day", span="year"):
     random_pause()
     resp = rh.stocks.get_stock_historicals(symbol, interval=interval, span=span)
@@ -100,6 +110,7 @@ def get_historical_data(symbol, interval="day", span="year"):
     return prices
 
 
+# Buy a stock by symbol and amount
 def buy_stock(symbol, amount):
     if MODE == "demo":
         return {"id": "demo"}
@@ -123,6 +134,7 @@ def buy_stock(symbol, amount):
     return buy_resp
 
 
+# Sell a stock by symbol and amount
 def sell_stock(symbol, amount):
     if MODE == "demo":
         return {"id": "demo"}
@@ -146,6 +158,7 @@ def sell_stock(symbol, amount):
     return buy_resp
 
 
+# Make AI-based decisions on stock portfolio and watchlist
 def make_decisions(buying_power, portfolio_overview, watchlist_overview):
     ai_prompt = (
         f"Analyze the stock portfolio and watchlist to make investment decisions. "
@@ -186,6 +199,7 @@ def make_decisions(buying_power, portfolio_overview, watchlist_overview):
     return decisions
 
 
+# Make post-decisions adjustment based on trading results
 def make_post_decisions_adjustment(buying_power, trading_results):
     ai_prompt = (
         "Analyze the trading results based on your previous decisions. "
@@ -223,9 +237,9 @@ def make_post_decisions_adjustment(buying_power, trading_results):
 
     return decisions
 
-def trading_bot():
-    log(f"Running trading bot in {MODE} mode...")
 
+# Main trading bot function
+def trading_bot():
     log("Getting my stocks to proceed...")
     my_stocks = get_my_stocks()
 
@@ -355,25 +369,29 @@ def trading_bot():
     return trading_results
 
 
-# Run the trading bot in a loop
+# Run trading bot in a loop
 def main():
     while True:
         try:
-            # Do not run bot if it's not working hours (9am-4pm EST) and workdays (Mon-Fri)
-            current_time = datetime.now()
-            if not RUN_ON_WORKDAYS_ONLY or (current_time.weekday() < 5 and 9 <= current_time.hour < 16):
+            market_hours = rh.get_market_hours(MARKET_MIC, datetime.now().strftime('%Y-%m-%d'))
+            if market_hours and market_hours['is_open']:
+                run_interval_seconds = RUN_INTERVAL_SECONDS
+                log(f"Market {MARKET_MIC} is open, running trading bot in {MODE} mode...")
                 trading_results = trading_bot()
                 total_sold = sum([result['amount'] for result in trading_results.values() if result['decision'] == "sell" and result['result'] == "success"])
                 total_bought = sum([result['amount'] for result in trading_results.values() if result['decision'] == "buy" and result['result'] == "success"])
                 log(f"Total sold: ${total_sold}, Total bought: ${total_bought}")
             else:
-                log("Outside of working hours, waiting for next run...")
+                run_interval_seconds = 60
+                log("Market is closed, waiting for next run...")
         except Exception as e:
+            run_interval_seconds = 60
             log(f"Trading bot error: {e}")
 
-        log(f"Waiting for {RUN_INTERVAL_SECONDS} seconds...")
-        time.sleep(RUN_INTERVAL_SECONDS)
+        log(f"Waiting for {run_interval_seconds} seconds...")
+        time.sleep(run_interval_seconds)
 
 
+# Run the main function
 if __name__ == '__main__':
     main()

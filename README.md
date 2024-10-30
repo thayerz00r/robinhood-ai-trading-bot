@@ -36,7 +36,7 @@ This is a scientific experiment to see how AI can trade stocks better than human
 - **Demo Mode**: Safely test trades without real execution.
 - **Manual Mode**: Approve each trade individually.
 - **Auto Mode**: Automate trades based on AI guidance.
-- **Workday Schedule**: Align bot activity with market hours (alpha version).
+- **Workday Schedule**: Align bot activity with market hours.
 - **Logging**: Track bot activity and trade history in the console.
 
 
@@ -74,44 +74,39 @@ Analyze the stock portfolio and watchlist to make investment decisions. Suggest 
 
 Portfolio overview:
 {
-  "AAPL": {
-    "price": "232.310000",
-    "quantity": "0.00000100",
-    "average_buy_price": "229.3259",
-    "equity": "0.00",
-    "percent_change": "1.30",
-    "intraday_percent_change": "0.00",
-    "equity_change": "0.000003",
-    "pe_ratio": "35.233500",
-    "percentage": "0.00",
-    "50_day_mavg": 226.95,
-    "200_day_mavg": 201.3,
-    "analyst_rating_sell_text": "Regulators have a keen eye on Apple, and recent regulations have chipped away at parts of Apple\u2019s sticky ecosystem. ",
-    "analyst_rating_buy_text": "Apple has a stellar balance sheet and sends great amounts of cash flow back to shareholders.",
-    "analyst_rating_summary": "Buy: 66%, Sell: 6%, Hold: 28%"
-  },
-  ...
+ "AAPL": {
+  "price": "232.640000",
+  "quantity": "0.00857400",
+  "average_buy_price": "233.2901",
+  "equity": "1.99",
+  "percent_change": "-0.28",
+  "intraday_percent_change": "0.00",
+  "equity_change": "-0.005574",
+  "pe_ratio": "35.536500",
+  "percentage": "0.24",
+  "50_day_mavg": 227.1,
+  "200_day_mavg": 201.54,
+  "analyst_rating_sell_text": "Regulators have a keen eye on Apple, and recent regulations have chipped away at parts of Apple\u2019s sticky ecosystem. ",
+  "analyst_rating_buy_text": "Apple has a stellar balance sheet and sends great amounts of cash flow back to shareholders.",
+  "analyst_rating_summary": "Buy: 66%, Sell: 6%, Hold: 28%"
+ },
+ ...
 }
 
 Watchlist overview:
 {
-  "EQIX": {
-    "price": 912.62,
-    "50_day_mavg": 863.13,
-    "200_day_mavg": 814.06,
-    "analyst_rating_sell_text": "Power constraints in key markets will threaten Equinix\u2019s ability to accommodate new tenants and will dampen returns on new developments.",
-    "analyst_rating_buy_text": "Equinix is positioned globally to benefit from growing data consumption in international and emerging markets. ",
-    "analyst_rating_summary": "Buy: 79%, Sell: 0%, Hold: 21%"
-  },
-  "MSN": {
-    "price": 0.5101,
-    "50_day_mavg": 0.48,
-    "200_day_mavg": 0.52
-  },
-  ...
+ "BL": {
+  "price": 57.33,
+  "50_day_mavg": 52.82,
+  "200_day_mavg": 54.9,
+  "analyst_rating_sell_text": "Despite a nearly 20-year history, BlackLine has yet to turn a GAAP profit, and it will be several more years before it can become profitable.",
+  "analyst_rating_buy_text": "BlackLine\u2019s new partnership with SAP provides BlackLine with a foothold in Europe and the opportunity to add some of the largest enterprises in the world to its client roster.",
+  "analyst_rating_summary": "Buy: 27%, Sell: 20%, Hold: 53%"
+ },
+ ...
 }
 
-Total buying power: $1.51.
+Total buying power: $0.09.
 
 Guidelines for buy/sell amounts:
 - Min sell: $1.0
@@ -120,7 +115,7 @@ Guidelines for buy/sell amounts:
 - Max buy: $150.0
 
 Provide a JSON response in this format:
-[{"stock_symbol": "<symbol>", "decision": "<decision>", "amount": <amount>}, ...]
+[{"symbol": "<symbol>", "decision": "<decision>", "amount": <amount>}, ...]
 Decision options: buy, sell, hold
 Amount is the suggested amount to buy or sell in $
 Return only the JSON array, without explanation or extra text. If no decisions are made, return an empty array.
@@ -147,17 +142,27 @@ Analyze the trading results based on your previous decisions. Make adjustments i
 
 Trading results:
 {
-  "AAPL": {
-    "stock_symbol": "AAPL",
-    "amount": 1.0,
-    "decision": "sell",
-    "result": "success",
-    "details": "Demo mode"
-  },
-  ...
+ "BLIN": {
+  "symbol": "BLIN",
+  "amount": 1.11,
+  "decision": "sell",
+  "result": "error",
+  "details": {
+   "detail": "You cannot open new fractional positions on this stock."
+  }
+ },
+ "PCTY": {
+  "symbol": "PCTY",
+  "amount": 1.0,
+  "decision": "buy",
+  "result": "error",
+  "details": {
+   "detail": "You can only purchase 0 shares of PCTY."
+  }
+ }
 }
 
-Total buying power: $1.51.
+Total buying power: $0.09.
 
 Guidelines for buy/sell amounts:
 - Min sell: $1.0
@@ -166,7 +171,7 @@ Guidelines for buy/sell amounts:
 - Max buy: $150.0
 
 Provide a JSON response in this format:
-[{"stock_symbol": "<symbol>", "decision": "<decision>", "amount": <amount>}, ...]
+[{"symbol": "<symbol>", "decision": "<decision>", "amount": <amount>}, ...]
 Decision options: buy, sell, hold
 Amount is the suggested amount to buy or sell in $
 Return only the JSON array, without explanation or extra text. If no decisions are made, return an empty array.
@@ -174,9 +179,7 @@ Return only the JSON array, without explanation or extra text. If no decisions a
 
 AI-response example:
 ```
-[
-    {"stock_symbol": "AAPL", "decision": "buy", "amount": 1.51}
-]
+[]
 ```
 
 
@@ -184,37 +187,29 @@ AI-response example:
 The bot logs its activity and trading decisions in a console log.
 Log example:
 ```
-[2024-10-29 09:23:45.961621]  Running trading bot in demo mode...
-[2024-10-29 09:23:45.961621]  Getting my stocks to proceed...
-[2024-10-29 09:23:50.899339]  Total stocks in portfolio: 27
-[2024-10-29 09:23:50.899339]  Prepare portfolio overview for AI analysis...
-[2024-10-29 09:23:54.968614]  Getting watchlist stocks to proceed...
-[2024-10-29 09:23:55.715594]  Total watchlist stocks: 611
-[2024-10-29 09:23:55.715594]  Limiting watchlist stocks to overview limit of 10 (random selection)...
-[2024-10-29 09:23:55.716594]  Prepare watchlist overview for AI analysis...
-[2024-10-29 09:23:57.108410]  Making AI-based decision...
-[2024-10-29 09:23:59.233363]  Total decisions: 4
-[2024-10-29 09:23:59.233363]  Executing decisions...
-[2024-10-29 09:23:59.233363]  NVDA > Decision: sell with amount $1.0
-[2024-10-29 09:23:59.233363]  NVDA > Demo > Sold $1.0 worth of stock
-[2024-10-29 09:23:59.233363]  AMZN > Decision: sell with amount $1.0
-[2024-10-29 09:23:59.233363]  AMZN > Demo > Sold $1.0 worth of stock
-[2024-10-29 09:23:59.233363]  META > Decision: sell with amount $1.0
-[2024-10-29 09:23:59.233363]  META > Demo > Sold $1.0 worth of stock
-[2024-10-29 09:23:59.233363]  BIDU > Decision: buy with amount $1.0
-[2024-10-29 09:23:59.233363]  BIDU > Demo > Bought $1.0 worth of stock
-[2024-10-29 09:23:59.233363]  Making AI-based post-decision analysis...
-[2024-10-29 09:24:00.189761]  Total post-decision adjustments: 1
-[2024-10-29 09:24:00.189761]  Executing decisions...
-[2024-10-29 09:24:00.189761]  BIDU > Decision: sell with amount $1.51
-[2024-10-29 09:24:00.189761]  BIDU > Demo > Sold $1.51 worth of stock
-[2024-10-29 09:24:00.189761]  Making AI-based post-decision analysis...
-[2024-10-29 09:24:01.760035]  Total post-decision adjustments: 1
-[2024-10-29 09:24:01.760035]  Executing decisions...
-[2024-10-29 09:24:01.760035]  BIDU > Decision: sell with amount $1.51
-[2024-10-29 09:24:01.760035]  BIDU > Demo > Sold $1.51 worth of stock
-[2024-10-29 09:24:01.760035]  Total sold: $4.51, Total bought: $0
-[2024-10-29 09:24:01.760035]  Waiting for 600 seconds...
+[2024-10-30 09:18:43.137340]  Market XNYS is open, running trading bot in auto mode...
+[2024-10-30 09:18:43.137340]  Getting my stocks to proceed...
+[2024-10-30 09:18:48.443992]  Total stocks in portfolio: 40
+[2024-10-30 09:18:48.443992]  Prepare portfolio overview for AI analysis...
+[2024-10-30 09:20:09.036619]  Getting watchlist stocks to proceed...
+[2024-10-30 09:20:11.000888]  Total watchlist stocks: 598
+[2024-10-30 09:20:11.001893]  Limiting watchlist stocks to overview limit of 10 (random selection)...
+[2024-10-30 09:20:11.001893]  Prepare watchlist overview for AI analysis...
+[2024-10-30 09:20:31.406655]  Making AI-based decision...
+[2024-10-30 09:20:34.720835]  Total decisions: 4
+[2024-10-30 09:20:34.720835]  Executing decisions...
+[2024-10-30 09:20:34.720835]  AAPL > Decision: sell with amount $1.0
+[2024-10-30 09:20:38.279698]  AAPL > Sold $1.0 worth of stock
+[2024-10-30 09:20:38.279698]  NVDA > Decision: sell with amount $1.0
+[2024-10-30 09:20:40.742978]  NVDA > Sold $1.0 worth of stock
+[2024-10-30 09:20:40.742978]  ZM > Decision: sell with amount $1.0
+[2024-10-30 09:20:44.033484]  ZM > Sold $1.0 worth of stock
+[2024-10-30 09:20:44.033484]  DUOT > Decision: buy with amount $1.0
+[2024-10-30 09:20:45.941911]  DUOT > Error buying: {'detail': 'You can only purchase 0 shares of DUOT.'}
+[2024-10-30 09:20:45.941911]  Making AI-based post-decision analysis...
+[2024-10-30 09:20:47.487805]  Total post-decision adjustments: 0
+[2024-10-30 09:20:47.487805]  Total sold: $3.0, Total bought: $0
+[2024-10-30 09:20:47.487805]  Waiting for 600 seconds...
 ```
 
 
@@ -247,10 +242,10 @@ ROBINHOOD_PASSWORD = "..."                  # Robinhood password
 
 # Basic config parameters
 MODE = "demo"                               # Trading mode (demo, auto, manual)
-RUN_ON_WORKDAYS_ONLY = True                 # Run bot only on workdays
-RUN_INTERVAL_SECONDS = 600                  # Trading interval in seconds
+RUN_INTERVAL_SECONDS = 600                  # Trading interval in seconds (if the market is open)
 
 # Robinhood config parameters
+MARKET_MIC = "XNYS"                         # Market MIC for open hours check (e.g. XNYS, XNAS)
 WATCHLIST_NAMES = []                        # Watchlist names (can be empty, or "My First List", "My Second List", etc.)
 WATCHLIST_OVERVIEW_LIMIT = 10               # Number of stocks to process in decision-making (e.g. 20)
 MIN_API_CALL_PAUSE_SECONDS = 0.5            # Minimum pause between Robinhood API calls in seconds (to avoid rate limits)

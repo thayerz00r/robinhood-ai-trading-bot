@@ -18,9 +18,9 @@ def log(msg):
     print(f"[{datetime.now()}]  {msg}")
 
 
-def random_pause(min_ms=MIN_API_CALL_PAUSE_MS, max_ms=MAX_API_CALL_PAUSE_MS):
-    delay_ms = random.uniform(min_ms, max_ms)
-    time.sleep(delay_ms / 1000)
+def random_pause(min_seconds=MIN_API_CALL_PAUSE_SECONDS, max_seconds=MAX_API_CALL_PAUSE_SECONDS):
+    delay = random.uniform(min_seconds, max_seconds)
+    time.sleep(delay)
 
 
 def calculate_moving_averages(prices, short_window=50, long_window=200):
@@ -29,8 +29,8 @@ def calculate_moving_averages(prices, short_window=50, long_window=200):
     return round(short_mavg, 2), round(long_mavg, 2)
 
 
-def enrich_with_moving_averages(stock_data, stock_symbol):
-    prices = get_historical_data(stock_symbol)
+def enrich_with_moving_averages(stock_data, symbol):
+    prices = get_historical_data(symbol)
     if len(prices) >= 200:
         moving_avg_50, moving_avg_200 = calculate_moving_averages(prices)
         stock_data["50_day_mavg"] = moving_avg_50
@@ -38,8 +38,8 @@ def enrich_with_moving_averages(stock_data, stock_symbol):
     return stock_data
 
 
-def enrich_with_analyst_ratings(stock_data, stock_symbol):
-    ratings = get_ratings(stock_symbol)
+def enrich_with_analyst_ratings(stock_data, symbol):
+    ratings = get_ratings(symbol)
     if 'ratings' in ratings and len(ratings['ratings']) > 0:
         last_sell_rating = next((rating for rating in ratings['ratings'] if rating['type'] == "sell"), None)
         last_buy_rating = next((rating for rating in ratings['ratings'] if rating['type'] == "buy"), None)
@@ -83,78 +83,78 @@ def get_watchlist_stocks(name):
     return resp['results']
 
 
-def get_ratings(stock_symbol):
+def get_ratings(symbol):
     random_pause()
-    resp = rh.stocks.get_ratings(stock_symbol)
+    resp = rh.stocks.get_ratings(symbol)
     if resp is None:
-        raise Exception(f"Error getting ratings for {stock_symbol}: No response")
+        raise Exception(f"Error getting ratings for {symbol}: No response")
     return resp
 
 
-def get_historical_data(stock_symbol, interval="day", span="year"):
+def get_historical_data(symbol, interval="day", span="year"):
     random_pause()
-    resp = rh.stocks.get_stock_historicals(stock_symbol, interval=interval, span=span)
+    resp = rh.stocks.get_stock_historicals(symbol, interval=interval, span=span)
     if resp is None:
-        raise Exception(f"Error getting historical data for {stock_symbol}: No response")
+        raise Exception(f"Error getting historical data for {symbol}: No response")
     prices = [float(day['close_price']) for day in resp]
     return prices
 
 
-def buy_stock(stock_symbol, amount):
+def buy_stock(symbol, amount):
     if MODE == "demo":
         return {"id": "demo"}
 
     if MODE == "manual":
-        confirm = input(f"Confirm buy for {stock_symbol} at ${amount}? (yes/no): ")
+        confirm = input(f"Confirm buy for {symbol} at ${amount}? (yes/no): ")
         if confirm.lower() != "yes":
             return {"id": "cancelled"}
 
     random_pause()
-    price_resp = rh.stocks.get_latest_price(stock_symbol)
+    price_resp = rh.stocks.get_latest_price(symbol)
     if len(price_resp) == 0 or price_resp[0] is None:
-        raise Exception(f"Error getting quote for {stock_symbol}: No response")
+        raise Exception(f"Error getting quote for {symbol}: No response")
     price = float(price_resp[0])
     quantity = round(amount / price, 6)
 
     random_pause()
-    buy_resp = rh.orders.order_buy_fractional_by_quantity(stock_symbol, quantity)
+    buy_resp = rh.orders.order_buy_fractional_by_quantity(symbol, quantity)
     if buy_resp is None:
-        raise Exception(f"Error buying {stock_symbol}: No response")
+        raise Exception(f"Error buying {symbol}: No response")
     return buy_resp
 
 
-def sell_stock(stock_symbol, amount):
+def sell_stock(symbol, amount):
     if MODE == "demo":
         return {"id": "demo"}
 
     if MODE == "manual":
-        confirm = input(f"Confirm sell for {stock_symbol} at ${amount}? (yes/no): ")
+        confirm = input(f"Confirm sell for {symbol} at ${amount}? (yes/no): ")
         if confirm.lower() != "yes":
             return {"id": "cancelled"}
 
     random_pause()
-    price_resp = rh.stocks.get_latest_price(stock_symbol)
+    price_resp = rh.stocks.get_latest_price(symbol)
     if len(price_resp) == 0 or price_resp[0] is None:
-        raise Exception(f"Error getting quote for {stock_symbol}: No response")
+        raise Exception(f"Error getting quote for {symbol}: No response")
     price = float(price_resp[0])
     quantity = round(amount / price, 6)
 
     random_pause()
-    buy_resp = rh.orders.order_sell_fractional_by_quantity(stock_symbol, quantity)
+    buy_resp = rh.orders.order_sell_fractional_by_quantity(symbol, quantity)
     if buy_resp is None:
-        raise Exception(f"Error selling {stock_symbol}: No response")
+        raise Exception(f"Error selling {symbol}: No response")
     return buy_resp
 
 
-def make_decision(buying_power, portfolio_overview, watchlist_overview):
+def make_decisions(buying_power, portfolio_overview, watchlist_overview):
     ai_prompt = (
         f"Analyze the stock portfolio and watchlist to make investment decisions. "
         f"Suggest which stocks to sell first from the portfolio to increase buying power, "
         f"and then determine if any stock from either the portfolio or the watchlist is worth buying. "
         f"Return sell decisions in the order they should be executed to maximize buying power, "
         f"and then provide buy decisions based on the resulting buying power.\n\n"
-        f"Portfolio overview:\n{json.dumps(portfolio_overview, indent=2)}\n\n"
-        f"Watchlist overview:\n{json.dumps(watchlist_overview, indent=2)}\n\n"
+        f"Portfolio overview:\n{json.dumps(portfolio_overview, indent=1)}\n\n"
+        f"Watchlist overview:\n{json.dumps(watchlist_overview, indent=1)}\n\n"
         f"Total buying power: ${buying_power}.\n\n"
         f"Guidelines for buy/sell amounts:\n"
         f"- Min sell: ${MIN_SELLING_AMOUNT_USD}\n"
@@ -162,7 +162,7 @@ def make_decision(buying_power, portfolio_overview, watchlist_overview):
         f"- Min buy: ${MIN_BUYING_AMOUNT_USD}\n"
         f"- Max buy: ${MAX_BUYING_AMOUNT_USD}\n\n"
         f"Provide a JSON response in this format:\n"
-        '[{"stock_symbol": "<symbol>", "decision": "<decision>", "amount": <amount>}, ...]\n'
+        '[{"symbol": "<symbol>", "decision": "<decision>", "amount": <amount>}, ...]\n'
         "Decision options: buy, sell, hold\n"
         "Amount is the suggested amount to buy or sell in $\n"
         "Return only the JSON array, without explanation or extra text. "
@@ -186,13 +186,13 @@ def make_decision(buying_power, portfolio_overview, watchlist_overview):
     return decisions
 
 
-def post_decision_analysis(buying_power, trading_results):
+def make_post_decisions_adjustment(buying_power, trading_results):
     ai_prompt = (
         "Analyze the trading results based on your previous decisions. "
         "Make adjustments if needed. "
         "Return sell decisions in the order they should be executed to maximize buying power, "
         "and then provide buy decisions based on the resulting buying power.\n\n"
-        f"Trading results:\n{json.dumps(trading_results, indent=2)}\n\n"
+        f"Trading results:\n{json.dumps(trading_results, indent=1)}\n\n"
         f"Total buying power: ${buying_power}.\n\n"
         "Guidelines for buy/sell amounts:\n"
         f"- Min sell: ${MIN_SELLING_AMOUNT_USD}\n"
@@ -200,7 +200,7 @@ def post_decision_analysis(buying_power, trading_results):
         f"- Min buy: ${MIN_BUYING_AMOUNT_USD}\n"
         f"- Max buy: ${MAX_BUYING_AMOUNT_USD}\n\n"
         "Provide a JSON response in this format:\n"
-        '[{"stock_symbol": "<symbol>", "decision": "<decision>", "amount": <amount>}, ...]\n'
+        '[{"symbol": "<symbol>", "decision": "<decision>", "amount": <amount>}, ...]\n'
         "Decision options: buy, sell, hold\n"
         "Amount is the suggested amount to buy or sell in $\n"
         "Return only the JSON array, without explanation or extra text. "
@@ -233,8 +233,8 @@ def trading_bot():
 
     log("Prepare portfolio overview for AI analysis...")
     portfolio_overview = {}
-    for stock_symbol, stock_data in my_stocks.items():
-        portfolio_overview[stock_symbol] = {
+    for symbol, stock_data in my_stocks.items():
+        portfolio_overview[symbol] = {
             "price": stock_data['price'],
             "quantity": stock_data['quantity'],
             "average_buy_price": stock_data['average_buy_price'],
@@ -245,8 +245,8 @@ def trading_bot():
             "pe_ratio": stock_data['pe_ratio'],
             "percentage": stock_data['percentage'],
         }
-        portfolio_overview[stock_symbol] = enrich_with_moving_averages(portfolio_overview[stock_symbol], stock_symbol)
-        portfolio_overview[stock_symbol] = enrich_with_analyst_ratings(portfolio_overview[stock_symbol], stock_symbol)
+        portfolio_overview[symbol] = enrich_with_moving_averages(portfolio_overview[symbol], symbol)
+        portfolio_overview[symbol] = enrich_with_analyst_ratings(portfolio_overview[symbol], symbol)
 
     log("Getting watchlist stocks to proceed...")
     watchlist_stocks = []
@@ -266,89 +266,91 @@ def trading_bot():
     log("Prepare watchlist overview for AI analysis...")
     watchlist_overview = {}
     for stock_data in watchlist_stocks:
-        stock_symbol = stock_data['symbol']
-        watchlist_overview[stock_symbol] = {
+        symbol = stock_data['symbol']
+        watchlist_overview[symbol] = {
             "price": stock_data['price'],
         }
-        watchlist_overview[stock_symbol] = enrich_with_moving_averages(watchlist_overview[stock_symbol], stock_symbol)
-        watchlist_overview[stock_symbol] = enrich_with_analyst_ratings(watchlist_overview[stock_symbol], stock_symbol)
+        watchlist_overview[symbol] = enrich_with_moving_averages(watchlist_overview[symbol], symbol)
+        watchlist_overview[symbol] = enrich_with_analyst_ratings(watchlist_overview[symbol], symbol)
 
     if len(portfolio_overview) == 0 and len(watchlist_overview) == 0:
         log("No stocks to analyze, skipping AI-based decision-making...")
         return {}
 
-    decisions = []
+    decisions_data = []
+    trading_results = {}
+    post_decisions_adjustment_count = 0
+
     try:
         log("Making AI-based decision...")
         buying_power = get_buying_power()
-        decisions = make_decision(buying_power, portfolio_overview, watchlist_overview)
+        decisions_data = make_decisions(buying_power, portfolio_overview, watchlist_overview)
     except Exception as e:
         log(f"Error making AI-based decision: {e}")
 
-    log(f"Total decisions: {len(decisions)}")
+    log(f"Total decisions: {len(decisions_data)}")
 
-    trading_results = {}
-    post_decision_adjustments_count = 0
-    while len(decisions) > 0:
+    while len(decisions_data) > 0:
         log("Executing decisions...")
-        for decision in decisions:
-            stock_symbol = decision['stock_symbol']
-            amount = decision['amount']
-            log(f"{stock_symbol} > Decision: {decision['decision']} with amount ${amount}")
+        for decision_data in decisions_data:
+            symbol = decision_data['symbol']
+            decision = decision_data['decision']
+            amount = decision_data['amount']
+            log(f"{symbol} > Decision: {decision} with amount ${amount}")
 
-            if decision['decision'] == "buy":
+            if decision == "buy":
                 try:
-                    buy_resp = buy_stock(stock_symbol, amount)
+                    buy_resp = buy_stock(symbol, amount)
                     if buy_resp and 'id' in buy_resp:
                         if buy_resp['id'] == "demo":
-                            trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "buy", "result": "success", "details": "Demo mode"}
-                            log(f"{stock_symbol} > Demo > Bought ${amount} worth of stock")
+                            trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "buy", "result": "success", "details": "Demo mode"}
+                            log(f"{symbol} > Demo > Bought ${amount} worth of stock")
                         elif buy_resp['id'] == "cancelled":
-                            trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "buy", "result": "cancelled", "details": "Cancelled by user"}
-                            log(f"{stock_symbol} > Buy cancelled")
+                            trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "buy", "result": "cancelled", "details": "Cancelled by user"}
+                            log(f"{symbol} > Buy cancelled by user")
                         else:
-                            trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "buy", "result": "success", "details": buy_resp}
-                            log(f"{stock_symbol} > Bought ${amount} worth of stock")
+                            trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "buy", "result": "success", "details": buy_resp}
+                            log(f"{symbol} > Bought ${amount} worth of stock")
                     else:
-                        trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "buy", "result": "error", "details": buy_resp}
-                        log(f"{stock_symbol} > Error buying: {buy_resp}")
+                        trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "buy", "result": "error", "details": buy_resp}
+                        log(f"{symbol} > Error buying: {buy_resp}")
                 except Exception as e:
-                    trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "buy", "result": "error", "details": str(e)}
-                    log(f"{stock_symbol} > Error buying: {e}")
+                    trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "buy", "result": "error", "details": str(e)}
+                    log(f"{symbol} > Error buying: {e}")
 
-            if decision['decision'] == "sell":
+            if decision == "sell":
                 try:
-                    sell_resp = sell_stock(stock_symbol, amount)
+                    sell_resp = sell_stock(symbol, amount)
                     if sell_resp and 'id' in sell_resp:
                         if sell_resp['id'] == "demo":
-                            trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "sell", "result": "success", "details": "Demo mode"}
-                            log(f"{stock_symbol} > Demo > Sold ${amount} worth of stock")
+                            trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "sell", "result": "success", "details": "Demo mode"}
+                            log(f"{symbol} > Demo > Sold ${amount} worth of stock")
                         elif sell_resp['id'] == "cancelled":
-                            trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "sell", "result": "cancelled", "details": "Cancelled by user"}
-                            log(f"{stock_symbol} > Sell cancelled")
+                            trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "sell", "result": "cancelled", "details": "Cancelled by user"}
+                            log(f"{symbol} > Sell cancelled by user")
                         else:
-                            trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "sell", "result": "success", "details": sell_resp}
-                            log(f"{stock_symbol} > Sold ${amount} worth of stock")
+                            trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "sell", "result": "success", "details": sell_resp}
+                            log(f"{symbol} > Sold ${amount} worth of stock")
                     else:
-                        trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "sell", "result": "error", "details": sell_resp}
-                        log(f"{stock_symbol} > Error selling: {sell_resp}")
+                        trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "sell", "result": "error", "details": sell_resp}
+                        log(f"{symbol} > Error selling: {sell_resp}")
                 except Exception as e:
-                    trading_results[stock_symbol] = {"stock_symbol": stock_symbol, "amount": amount, "decision": "sell", "result": "error", "details": str(e)}
-                    log(f"{stock_symbol} > Error selling: {e}")
+                    trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "sell", "result": "error", "details": str(e)}
+                    log(f"{symbol} > Error selling: {e}")
 
-        if post_decision_adjustments_count >= MAX_POST_DECISION_ADJUSTMENTS:
+        if post_decisions_adjustment_count >= MAX_POST_DECISIONS_ADJUSTMENTS:
             break
 
         try:
             log("Making AI-based post-decision analysis...")
             buying_power = get_buying_power()
-            decisions = post_decision_analysis(buying_power, trading_results)
-            post_decision_adjustments_count += 1
+            decisions_data = make_post_decisions_adjustment(buying_power, trading_results)
+            post_decisions_adjustment_count += 1
         except Exception as e:
             log(f"Error making post-decision analysis: {e}")
             break
 
-        log(f"Total post-decision adjustments: {len(decisions)}")
+        log(f"Total post-decision adjustments: {len(decisions_data)}")
 
     return trading_results
 
@@ -366,13 +368,11 @@ def main():
                 log(f"Total sold: ${total_sold}, Total bought: ${total_bought}")
             else:
                 log("Outside of working hours, waiting for next run...")
-
-            log(f"Waiting for {RUN_INTERVAL_SECONDS} seconds...")
-            time.sleep(RUN_INTERVAL_SECONDS)
-
         except Exception as e:
             log(f"Trading bot error: {e}")
-            time.sleep(30)
+
+        log(f"Waiting for {RUN_INTERVAL_SECONDS} seconds...")
+        time.sleep(RUN_INTERVAL_SECONDS)
 
 
 if __name__ == '__main__':

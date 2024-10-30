@@ -323,7 +323,11 @@ def trading_bot():
                             trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "buy", "result": "cancelled", "details": "Cancelled by user"}
                             log(f"{symbol} > Buy cancelled by user")
                         else:
-                            trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "buy", "result": "success", "details": buy_resp}
+                            trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "buy", "result": "success", "details": {
+                                "quantity": float(buy_resp['quantity']),
+                                "price": float(buy_resp['price']),
+                                "fees": float(buy_resp['fees']),
+                            }}
                             log(f"{symbol} > Bought ${amount} worth of stock")
                     else:
                         trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "buy", "result": "error", "details": buy_resp}
@@ -343,7 +347,11 @@ def trading_bot():
                             trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "sell", "result": "cancelled", "details": "Cancelled by user"}
                             log(f"{symbol} > Sell cancelled by user")
                         else:
-                            trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "sell", "result": "success", "details": sell_resp}
+                            trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "sell", "result": "success", "details": {
+                                "quantity": float(sell_resp['quantity']),
+                                "price": float(sell_resp['price']),
+                                "fees": float(sell_resp['fees']),
+                            }}
                             log(f"{symbol} > Sold ${amount} worth of stock")
                     else:
                         trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "sell", "result": "error", "details": sell_resp}

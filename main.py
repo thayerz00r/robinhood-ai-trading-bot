@@ -450,9 +450,12 @@ def main():
                 run_interval_seconds = RUN_INTERVAL_SECONDS
                 log_info(f"Market is open, running trading bot in {MODE} mode...")
                 trading_results = trading_bot()
-                total_sold = sum([result['amount'] for result in trading_results.values() if result['decision'] == "sell" and result['result'] == "success"])
-                total_bought = sum([result['amount'] for result in trading_results.values() if result['decision'] == "buy" and result['result'] == "success"])
-                log_info(f"Total sold: ${total_sold}, Total bought: ${total_bought}")
+                sold_stocks = [f"{result['symbol']}: ${result['amount']}" for result in trading_results.values() if result['decision'] == "sell" and result['result'] == "success"]
+                bought_stocks = [f"{result['symbol']}: ${result['amount']}" for result in trading_results.values() if result['decision'] == "buy" and result['result'] == "success"]
+                errors = [f"{result['symbol']}: {result['details']}" for result in trading_results.values() if result['result'] == "error"]
+                log_info(f"Sold stocks: {"None" if len(sold_stocks) == 0 else ', '.join(sold_stocks)}")
+                log_info(f"Bought stocks: {"None" if len(bought_stocks) == 0 else ', '.join(bought_stocks)}")
+                log_info(f"Errors: {"None" if len(errors) == 0 else ', '.join(errors)}")
             else:
                 run_interval_seconds = 60
                 log_info("Market is closed, waiting for next run...")

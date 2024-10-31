@@ -277,11 +277,12 @@ def make_ai_post_decisions_adjustment(buying_power, trading_results):
 def adjust_decisions(decisions):
     sell_decisions = [decision for decision in decisions if decision['decision'] == "sell"]
     buy_decisions = [decision for decision in decisions if decision['decision'] == "buy"]
+    hold_decisions = [decision for decision in decisions if decision['decision'] == "hold"]
     for decision in sell_decisions:
         decision['amount'] = round_money(max(MIN_SELLING_AMOUNT_USD, min(MAX_SELLING_AMOUNT_USD, decision['amount'])))
     for decision in buy_decisions:
         decision['amount'] = round_money(max(MIN_BUYING_AMOUNT_USD, min(MAX_BUYING_AMOUNT_USD, decision['amount'])))
-    return sell_decisions + buy_decisions
+    return sell_decisions + buy_decisions + hold_decisions
 
 
 # Main trading bot function
@@ -336,9 +337,8 @@ def trading_bot():
     except Exception as e:
         log_error(f"Error making AI-based decision: {e}")
 
-    log_info(f"Total decisions: {len(decisions_data)}")
-
     while len(decisions_data) > 0:
+        log_info(f"Total decisions: {len(decisions_data)}")
         log_info("Adjusting decisions based on trading parameters...")
         decisions_data = adjust_decisions(decisions_data)
         log_debug(f"Adjusted decisions: {decisions_data}")
@@ -412,8 +412,6 @@ def trading_bot():
         except Exception as e:
             log_error(f"Error making post-decision analysis: {e}")
             break
-
-        log_info(f"Total post-decision adjustments: {len(decisions_data)}")
 
     return trading_results
 

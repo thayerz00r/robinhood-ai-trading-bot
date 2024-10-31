@@ -43,10 +43,16 @@ def log_error(msg):
     log("ERROR", msg)
 
 
-# Random pause between API calls
-def random_pause(min_seconds=MIN_API_CALL_PAUSE_SECONDS, max_seconds=MAX_API_CALL_PAUSE_SECONDS):
-    delay = random.uniform(min_seconds, max_seconds)
-    time.sleep(delay)
+# Run a function with retries and random delays
+def run_with_retries(func, *args, max_retries=3, min_delay=60, max_delay=60, **kwargs):
+    for attempt in range(max_retries):
+        result = func(*args, **kwargs)
+        if result is not None:
+            return result
+        log_debug(f"Attempt {attempt + 1}/{max_retries} failed, retrying...")
+        delay = random.uniform(min_delay, max_delay)
+        time.sleep(delay)
+    return None
 
 
 # Calculate moving averages for stock prices
@@ -89,8 +95,7 @@ def enrich_with_analyst_ratings(stock_data, symbol):
 
 # Get my buying power
 def get_buying_power():
-    random_pause()
-    resp = rh.profiles.load_account_profile()
+    resp = run_with_retries(rh.profiles.load_account_profile)
     if resp is None or 'buying_power' not in resp:
         raise Exception("Error getting profile data: No response")
     buying_power = float(resp['buying_power'])
@@ -99,8 +104,7 @@ def get_buying_power():
 
 # Get my stocks
 def get_my_stocks():
-    random_pause()
-    resp = rh.build_holdings()
+    resp = run_with_retries(rh.build_holdings)
     if resp is None:
         raise Exception("Error getting holdings data: No response")
     return resp
@@ -108,8 +112,7 @@ def get_my_stocks():
 
 # Get watchlist stocks by name
 def get_watchlist_stocks(name):
-    random_pause()
-    resp = rh.get_watchlist_by_name(name)
+    resp = run_with_retries(rh.get_watchlist_by_name, name)
     if resp is None or 'results' not in resp:
         raise Exception(f"Error getting watchlist {name}: No response")
     return resp['results']
@@ -117,8 +120,7 @@ def get_watchlist_stocks(name):
 
 # Get analyst ratings for a stock by symbol
 def get_ratings(symbol):
-    random_pause()
-    resp = rh.stocks.get_ratings(symbol)
+    resp = run_with_retries(rh.stocks.get_ratings, symbol)
     if resp is None:
         raise Exception(f"Error getting ratings for {symbol}: No response")
     return resp
@@ -126,8 +128,7 @@ def get_ratings(symbol):
 
 # Get historical stock data by symbol
 def get_historical_data(symbol, interval="day", span="year"):
-    random_pause()
-    resp = rh.stocks.get_stock_historicals(symbol, interval=interval, span=span)
+    resp = run_with_retries(rh.stocks.get_stock_historicals,symbol, interval=interval, span=span)
     if resp is None:
         raise Exception(f"Error getting historical data for {symbol}: No response")
     prices = [float(day['close_price']) for day in resp]
@@ -136,8 +137,7 @@ def get_historical_data(symbol, interval="day", span="year"):
 
 # Convert amount to quantity based on stock price
 def amount_to_quantity(symbol, amount):
-    random_pause()
-    price_resp = rh.stocks.get_latest_price(symbol)
+    price_resp = run_with_retries(rh.stocks.get_latest_price, symbol)
     if len(price_resp) == 0 or price_resp[0] is None:
         raise Exception(f"Error getting quote for {symbol}: No response")
     price = float(price_resp[0])
@@ -155,9 +155,7 @@ def sell_stock(symbol, quantity):
         if confirm.lower() != "yes":
             return {"id": "cancelled"}
 
-    random_pause()
-    log_debug(f"{symbol} > Selling {quantity} shares")
-    sell_resp = rh.orders.order_sell_fractional_by_quantity(symbol, quantity)
+    sell_resp = run_with_retries(rh.orders.order_sell_fractional_by_quantity, symbol, quantity)
     if sell_resp is None:
         raise Exception(f"Error selling {symbol}: No response")
     return sell_resp
@@ -173,9 +171,8 @@ def buy_stock(symbol, quantity):
         if confirm.lower() != "yes":
             return {"id": "cancelled"}
 
-    random_pause()
     log_debug(f"{symbol} > Buying {quantity} shares")
-    buy_resp = rh.orders.order_buy_fractional_by_quantity(symbol, quantity)
+    buy_resp = run_with_retries(rh.orders.order_buy_fractional_by_quantity, symbol, quantity)
     if buy_resp is None:
         raise Exception(f"Error buying {symbol}: No response")
     return buy_resp
@@ -345,8 +342,9 @@ def trading_bot():
                     quantity = amount_to_quantity(symbol, amount)
                     available_quantity = float(portfolio_overview[symbol]['quantity'])
                     # TODO: Not sure if this is the best way to handle this
-                    if quantity > available_quantity:
-                        quantity = available_quantity
+                    # if quantity > available_quantity:
+                    #     quantity = available_quantity
+                    log_debug(f"{symbol} > Trying to sell ${amount}, quantity: {quantity}. Available: {available_quantity}")
                     sell_resp = sell_stock(symbol, quantity)
                     if sell_resp and 'id' in sell_resp:
                         if sell_resp['id'] == "demo":
@@ -375,9 +373,10 @@ def trading_bot():
                 try:
                     buying_power = get_buying_power()
                     # TODO: Not sure if this is the best way to handle this
-                    if amount > buying_power:
-                        amount = buying_power
+                    # if amount > buying_power:
+                    #     amount = buying_power
                     quantity = amount_to_quantity(symbol, amount)
+                    log_debug(f"{symbol} > Trying to buy ${amount}, quantity: {quantity}. Buying power: ${buying_power}")
                     buy_resp = buy_stock(symbol, quantity)
                     if buy_resp and 'id' in buy_resp:
                         if buy_resp['id'] == "demo":
@@ -423,7 +422,7 @@ def trading_bot():
 def main():
     while True:
         try:
-            market_hours = rh.get_market_hours(MARKET_MIC, datetime.now().strftime('%Y-%m-%d'))
+            market_hours = run_with_retries(rh.get_market_hours, MARKET_MIC, datetime.now().strftime('%Y-%m-%d'))
             if market_hours and market_hours['is_open']:
                 run_interval_seconds = RUN_INTERVAL_SECONDS
                 log_info(f"Market {MARKET_MIC} is open, running trading bot in {MODE} mode...")

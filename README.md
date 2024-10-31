@@ -271,10 +271,10 @@ MAX_POST_DECISIONS_ADJUSTMENTS = 1          # Maximum number of adjustments to m
 OPENAI_MODEL_NAME = "gpt-4o-mini"           # OpenAI model name
 
 # Trading parameters
-MIN_SELLING_AMOUNT_USD = 1.0                # Minimum sell amount in USD
-MAX_SELLING_AMOUNT_USD = 10.0               # Maximum sell amount in USD
-MIN_BUYING_AMOUNT_USD = 1.0                 # Minimum buy amount in USD
-MAX_BUYING_AMOUNT_USD = 10.0                # Maximum buy amount in USD
+MIN_SELLING_AMOUNT_USD = 1.5                # Minimum sell amount in USD
+MAX_SELLING_AMOUNT_USD = 15.0               # Maximum sell amount in USD
+MIN_BUYING_AMOUNT_USD = 1.5                 # Minimum buy amount in USD
+MAX_BUYING_AMOUNT_USD = 15.0                # Maximum buy amount in USD
 ```
 
 ### Run

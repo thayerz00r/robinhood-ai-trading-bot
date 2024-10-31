@@ -6,7 +6,6 @@ import pandas as pd
 import numpy as np
 import json
 import re
-import random
 from config import *
 
 
@@ -46,22 +45,47 @@ def log_error(msg):
 
 
 # Run a function with retries and random delays
-def run_with_retries(func, *args, max_retries=3, min_delay=60, max_delay=60, **kwargs):
+def run_with_retries(func, *args, max_retries=3, delay=60, **kwargs):
     for attempt in range(max_retries):
         result = func(*args, **kwargs)
         if result is not None:
             return result
-        delay = random.uniform(min_delay, max_delay)
         log_debug(f"Attempt {attempt + 1}/{max_retries} failed, retrying in {delay} seconds...")
         time.sleep(delay)
     return None
+
+
+# Round money
+def round_money(price, decimals=2):
+    return round(float(price), decimals)
+
+
+# Round quantity
+def round_quantity(quantity, decimals=6):
+    return round(float(quantity), decimals)
 
 
 # Calculate moving averages for stock prices
 def calculate_moving_averages(prices, short_window=50, long_window=200):
     short_mavg = pd.Series(prices).rolling(window=short_window).mean().iloc[-1]
     long_mavg = pd.Series(prices).rolling(window=long_window).mean().iloc[-1]
-    return round(short_mavg, 2), round(long_mavg, 2)
+    return short_mavg, long_mavg
+
+
+# Extract data from my stocks
+def extract_my_stocks_data(stock_data):
+    return {
+        "price": round_money(stock_data['price']),
+        "quantity": round_quantity(stock_data['quantity']),
+        "average_buy_price": round_money(stock_data['average_buy_price']),
+    }
+
+
+# Extract data from watchlist stocks
+def extract_watchlist_data(stock_data):
+    return {
+        "price": round_money(stock_data['price']),
+    }
 
 
 # Enrich stock data with moving averages
@@ -69,8 +93,8 @@ def enrich_with_moving_averages(stock_data, symbol):
     prices = get_historical_data(symbol)
     if len(prices) >= 200:
         moving_avg_50, moving_avg_200 = calculate_moving_averages(prices)
-        stock_data["50_day_mavg"] = moving_avg_50
-        stock_data["200_day_mavg"] = moving_avg_200
+        stock_data["50_day_mavg"] = round_money(moving_avg_50)
+        stock_data["200_day_mavg"] = round_money(moving_avg_200)
     return stock_data
 
 
@@ -137,16 +161,6 @@ def get_historical_data(symbol, interval="day", span="year"):
     return prices
 
 
-# Convert amount to quantity based on stock price
-def amount_to_quantity(symbol, amount):
-    price_resp = run_with_retries(rh.stocks.get_latest_price, symbol)
-    if len(price_resp) == 0 or price_resp[0] is None:
-        raise Exception(f"Error getting quote for {symbol}: No response")
-    price = float(price_resp[0])
-    quantity = round(amount / price, 6)
-    return quantity
-
-
 # Sell a stock by symbol and amount
 def sell_stock(symbol, amount):
     if MODE == "demo":
@@ -211,16 +225,16 @@ def make_ai_decisions(buying_power, portfolio_overview, watchlist_overview):
         f"and then provide buy decisions based on the resulting buying power.\n\n"
         f"Portfolio overview:\n{json.dumps(portfolio_overview, indent=1)}\n\n"
         f"Watchlist overview:\n{json.dumps(watchlist_overview, indent=1)}\n\n"
-        f"Total buying power: ${buying_power}.\n\n"
-        f"Guidelines for buy/sell amounts:\n"
-        f"- Min sell: ${MIN_SELLING_AMOUNT_USD}\n"
-        f"- Max sell: ${MAX_SELLING_AMOUNT_USD}\n"
-        f"- Min buy: ${MIN_BUYING_AMOUNT_USD}\n"
-        f"- Max buy: ${MAX_BUYING_AMOUNT_USD}\n\n"
+        f"Total buying power in USD: {buying_power}\n\n"
+        f"Guidelines for buy/sell amounts in USD:\n"
+        f"- Min sell: {round_money(MIN_SELLING_AMOUNT_USD)}\n"
+        f"- Max sell: {round_money(MAX_SELLING_AMOUNT_USD)}\n"
+        f"- Min buy: {round_money(MIN_BUYING_AMOUNT_USD)}\n"
+        f"- Max buy: {round_money(MAX_BUYING_AMOUNT_USD)}\n\n"
         f"Provide a JSON response in this format:\n"
         '[{"symbol": "<symbol>", "decision": "<decision>", "amount": <amount>}, ...]\n'
         "Decision options: buy, sell, hold\n"
-        "Amount is the suggested amount to buy or sell in $\n"
+        "Amount is the suggested amount to buy or sell in USD.\n"
         "Return only the JSON array, without explanation or extra text. "
         "If no decisions are made, return an empty array."
     )
@@ -239,16 +253,16 @@ def make_ai_post_decisions_adjustment(buying_power, trading_results):
         "Return sell decisions in the order they should be executed to maximize buying power, "
         "and then provide buy decisions based on the resulting buying power.\n\n"
         f"Trading results:\n{json.dumps(trading_results, indent=1)}\n\n"
-        f"Total buying power: ${buying_power}.\n\n"
-        "Guidelines for buy/sell amounts:\n"
-        f"- Min sell: ${MIN_SELLING_AMOUNT_USD}\n"
-        f"- Max sell: ${MAX_SELLING_AMOUNT_USD}\n"
-        f"- Min buy: ${MIN_BUYING_AMOUNT_USD}\n"
-        f"- Max buy: ${MAX_BUYING_AMOUNT_USD}\n\n"
+        f"Total buying power in USD: {buying_power}\n\n"
+        "Guidelines for buy/sell amounts in USD:\n"
+        f"- Min sell: {round_money(MIN_SELLING_AMOUNT_USD)}\n"
+        f"- Max sell: {round_money(MAX_SELLING_AMOUNT_USD)}\n"
+        f"- Min buy: {round_money(MIN_BUYING_AMOUNT_USD)}\n"
+        f"- Max buy: {round_money(MAX_BUYING_AMOUNT_USD)}\n\n"
         "Provide a JSON response in this format:\n"
         '[{"symbol": "<symbol>", "decision": "<decision>", "amount": <amount>}, ...]\n'
         "Decision options: buy, sell, hold\n"
-        "Amount is the suggested amount to buy or sell in $\n"
+        "Amount is the suggested amount to buy or sell in USD.\n"
         "Return only the JSON array, without explanation or extra text. "
         "If no decisions are made, return an empty array."
     )
@@ -264,9 +278,9 @@ def adjust_decisions(decisions):
     sell_decisions = [decision for decision in decisions if decision['decision'] == "sell"]
     buy_decisions = [decision for decision in decisions if decision['decision'] == "buy"]
     for decision in sell_decisions:
-        decision['amount'] = max(MIN_SELLING_AMOUNT_USD, min(MAX_SELLING_AMOUNT_USD, decision['amount']))
+        decision['amount'] = round_money(max(MIN_SELLING_AMOUNT_USD, min(MAX_SELLING_AMOUNT_USD, decision['amount'])))
     for decision in buy_decisions:
-        decision['amount'] = max(MIN_BUYING_AMOUNT_USD, min(MAX_BUYING_AMOUNT_USD, decision['amount']))
+        decision['amount'] = round_money(max(MIN_BUYING_AMOUNT_USD, min(MAX_BUYING_AMOUNT_USD, decision['amount'])))
     return sell_decisions + buy_decisions
 
 
@@ -280,17 +294,7 @@ def trading_bot():
     log_info("Prepare portfolio overview for AI analysis...")
     portfolio_overview = {}
     for symbol, stock_data in my_stocks.items():
-        portfolio_overview[symbol] = {
-            "price": stock_data['price'],
-            "quantity": stock_data['quantity'],
-            "average_buy_price": stock_data['average_buy_price'],
-            "equity": stock_data['equity'],
-            "percent_change": stock_data['percent_change'],
-            "intraday_percent_change": stock_data['intraday_percent_change'],
-            "equity_change": stock_data['equity_change'],
-            "pe_ratio": stock_data['pe_ratio'],
-            "percentage": stock_data['percentage'],
-        }
+        portfolio_overview[symbol] = extract_my_stocks_data(stock_data)
         portfolio_overview[symbol] = enrich_with_moving_averages(portfolio_overview[symbol], symbol)
         portfolio_overview[symbol] = enrich_with_analyst_ratings(portfolio_overview[symbol], symbol)
 
@@ -313,9 +317,7 @@ def trading_bot():
     watchlist_overview = {}
     for stock_data in watchlist_stocks:
         symbol = stock_data['symbol']
-        watchlist_overview[symbol] = {
-            "price": stock_data['price'],
-        }
+        watchlist_overview[symbol] = extract_watchlist_data(stock_data)
         watchlist_overview[symbol] = enrich_with_moving_averages(watchlist_overview[symbol], symbol)
         watchlist_overview[symbol] = enrich_with_analyst_ratings(watchlist_overview[symbol], symbol)
 
@@ -329,7 +331,7 @@ def trading_bot():
 
     try:
         log_info("Making AI-based decision...")
-        buying_power = get_buying_power()
+        buying_power = round_money(get_buying_power())
         decisions_data = make_ai_decisions(buying_power, portfolio_overview, watchlist_overview)
     except Exception as e:
         log_error(f"Error making AI-based decision: {e}")
@@ -404,7 +406,7 @@ def trading_bot():
 
         try:
             log_info("Making AI-based post-decision analysis...")
-            buying_power = get_buying_power()
+            buying_power = round_money(get_buying_power())
             decisions_data = make_ai_post_decisions_adjustment(buying_power, trading_results)
             post_decisions_adjustment_count += 1
         except Exception as e:

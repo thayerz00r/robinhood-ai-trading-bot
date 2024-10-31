@@ -9,7 +9,6 @@ LOG_LEVEL = "INFO"                          # Log level (DEBUG, INFO, WARNING, E
 RUN_INTERVAL_SECONDS = 600                  # Trading interval in seconds (if the market is open)
 
 # Robinhood config parameters
-MARKET_MIC = "XNYS"                         # Market MIC for open hours check (e.g. XNYS, XNAS)
 WATCHLIST_NAMES = []                        # Watchlist names (can be empty, or "My First List", "My Second List", etc.)
 WATCHLIST_OVERVIEW_LIMIT = 10               # Number of stocks to process in decision-making (e.g. 20)
 

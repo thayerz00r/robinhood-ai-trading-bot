@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 import json
 import re
+from pytz import timezone
 from config import *
 
 
@@ -53,6 +54,18 @@ def run_with_retries(func, *args, max_retries=3, delay=60, **kwargs):
         log_debug(f"Attempt {attempt + 1}/{max_retries} failed, retrying in {delay} seconds...")
         time.sleep(delay)
     return None
+
+
+# Check if the market is open
+def is_market_open():
+    # market_hours = run_with_retries(rh.get_market_hours, MARKET_MIC, datetime.now().strftime('%Y-%m-%d'))
+    eastern = timezone('US/Eastern')
+    now = datetime.now(eastern)
+    if now.weekday() >= 5:
+        return False
+    market_open = now.replace(hour=9, minute=30, second=0, microsecond=0)
+    market_close = now.replace(hour=16, minute=0, second=0, microsecond=0)
+    return market_open <= now <= market_close
 
 
 # Round money
@@ -420,11 +433,9 @@ def trading_bot():
 def main():
     while True:
         try:
-            market_hours = run_with_retries(rh.get_market_hours, MARKET_MIC, datetime.now().strftime('%Y-%m-%d'))
-            log_debug(f"Market hours: {market_hours}")
-            if market_hours and market_hours['is_open']:
+            if is_market_open():
                 run_interval_seconds = RUN_INTERVAL_SECONDS
-                log_info(f"Market {MARKET_MIC} is open, running trading bot in {MODE} mode...")
+                log_info(f"Market is open, running trading bot in {MODE} mode...")
                 trading_results = trading_bot()
                 total_sold = sum([result['amount'] for result in trading_results.values() if result['decision'] == "sell" and result['result'] == "success"])
                 total_bought = sum([result['amount'] for result in trading_results.values() if result['decision'] == "buy" and result['result'] == "success"])

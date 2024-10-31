@@ -14,9 +14,33 @@ openai_client = OpenAI(api_key=OPENAI_API_KEY)
 rh.login(ROBINHOOD_USERNAME, ROBINHOOD_PASSWORD)
 
 
-# Print log message with timestamp
-def log(msg):
-    print(f"[{datetime.now()}]  {msg}")
+# Print log message
+def log(level, msg):
+    if level not in ["DEBUG", "INFO", "WARNING", "ERROR"]:
+        level = "INFO"
+    log_levels = {"DEBUG": 1, "INFO": 2, "WARNING": 3, "ERROR": 4}
+    if log_levels.get(level, 2) >= log_levels.get(LOG_LEVEL, 2):
+        print(f"[{datetime.now()}]  [{level}]   {msg}")
+
+
+# Print debug log message
+def log_debug(msg):
+    log("DEBUG", msg)
+
+
+# Print info log message
+def log_info(msg):
+    log("INFO", msg)
+
+
+# Print warning log message
+def log_warning(msg):
+    log("WARNING", msg)
+
+
+# Print error log message
+def log_error(msg):
+    log("ERROR", msg)
 
 
 # Random pause between API calls
@@ -132,6 +156,9 @@ def buy_stock(symbol, amount):
             return {"id": "cancelled"}
 
     quantity = amount_to_quantity(symbol, amount)
+
+    log_debug(f"{symbol} > Buying {quantity} shares at ${amount}")
+
     random_pause()
     buy_resp = rh.orders.order_buy_fractional_by_quantity(symbol, quantity)
     if buy_resp is None:
@@ -150,8 +177,11 @@ def sell_stock(symbol, amount, available_quantity):
             return {"id": "cancelled"}
 
     quantity = amount_to_quantity(symbol, amount)
+
+    log_debug(f"{symbol} > Selling {quantity} shares at ${amount}, available: {available_quantity}")
     if quantity > available_quantity:
         quantity = available_quantity
+
     random_pause()
     sell_resp = rh.orders.order_sell_fractional_by_quantity(symbol, quantity)
     if sell_resp is None:
@@ -182,6 +212,7 @@ def make_decisions(buying_power, portfolio_overview, watchlist_overview):
         "Return only the JSON array, without explanation or extra text. "
         "If no decisions are made, return an empty array."
     )
+    log_debug(ai_prompt)
 
     ai_response = openai_client.chat.completions.create(
         model=OPENAI_MODEL_NAME,
@@ -193,6 +224,7 @@ def make_decisions(buying_power, portfolio_overview, watchlist_overview):
 
     try:
         ai_content = re.sub(r'```json|```', '', ai_response.choices[0].message.content.strip())
+        log_debug(ai_content)
         decisions = json.loads(ai_content)
     except json.JSONDecodeError as e:
         raise Exception("Invalid JSON response from OpenAI: " + ai_response.choices[0].message.content.strip())
@@ -222,6 +254,8 @@ def make_post_decisions_adjustment(buying_power, trading_results):
         "If no decisions are made, return an empty array."
     )
 
+    log_debug(ai_prompt)
+
     ai_response = openai_client.chat.completions.create(
         model=OPENAI_MODEL_NAME,
         messages=[
@@ -232,6 +266,7 @@ def make_post_decisions_adjustment(buying_power, trading_results):
 
     try:
         ai_content = re.sub(r'```json|```', '', ai_response.choices[0].message.content.strip())
+        log_debug(ai_content)
         decisions = json.loads(ai_content)
     except json.JSONDecodeError:
         raise Exception("Invalid JSON response from OpenAI: " + ai_response.choices[0].message.content.strip())
@@ -241,12 +276,12 @@ def make_post_decisions_adjustment(buying_power, trading_results):
 
 # Main trading bot function
 def trading_bot():
-    log("Getting my stocks to proceed...")
+    log_info("Getting my stocks to proceed...")
     my_stocks = get_my_stocks()
 
-    log(f"Total stocks in portfolio: {len(my_stocks)}")
+    log_info(f"Total stocks in portfolio: {len(my_stocks)}")
 
-    log("Prepare portfolio overview for AI analysis...")
+    log_info("Prepare portfolio overview for AI analysis...")
     portfolio_overview = {}
     for symbol, stock_data in my_stocks.items():
         portfolio_overview[symbol] = {
@@ -263,22 +298,22 @@ def trading_bot():
         portfolio_overview[symbol] = enrich_with_moving_averages(portfolio_overview[symbol], symbol)
         portfolio_overview[symbol] = enrich_with_analyst_ratings(portfolio_overview[symbol], symbol)
 
-    log("Getting watchlist stocks to proceed...")
+    log_info("Getting watchlist stocks to proceed...")
     watchlist_stocks = []
     for watchlist_name in WATCHLIST_NAMES:
         try:
             watchlist_stocks.extend(get_watchlist_stocks(watchlist_name))
             watchlist_stocks = [stock for stock in watchlist_stocks if stock['symbol'] not in my_stocks.keys()]
         except Exception as e:
-            log(f"Error getting watchlist stocks for {watchlist_name}: {e}")
+            log_error(f"Error getting watchlist stocks for {watchlist_name}: {e}")
 
-    log(f"Total watchlist stocks: {len(watchlist_stocks)}")
+    log_info(f"Total watchlist stocks: {len(watchlist_stocks)}")
 
     if len(watchlist_stocks) > WATCHLIST_OVERVIEW_LIMIT:
-        log(f"Limiting watchlist stocks to overview limit of {WATCHLIST_OVERVIEW_LIMIT} (random selection)...")
+        log_info(f"Limiting watchlist stocks to overview limit of {WATCHLIST_OVERVIEW_LIMIT} (random selection)...")
         watchlist_stocks = np.random.choice(watchlist_stocks, WATCHLIST_OVERVIEW_LIMIT, replace=False)
 
-    log("Prepare watchlist overview for AI analysis...")
+    log_info("Prepare watchlist overview for AI analysis...")
     watchlist_overview = {}
     for stock_data in watchlist_stocks:
         symbol = stock_data['symbol']
@@ -289,7 +324,7 @@ def trading_bot():
         watchlist_overview[symbol] = enrich_with_analyst_ratings(watchlist_overview[symbol], symbol)
 
     if len(portfolio_overview) == 0 and len(watchlist_overview) == 0:
-        log("No stocks to analyze, skipping AI-based decision-making...")
+        log_info("No stocks to analyze, skipping AI-based decision-making...")
         return {}
 
     decisions_data = []
@@ -297,21 +332,21 @@ def trading_bot():
     post_decisions_adjustment_count = 0
 
     try:
-        log("Making AI-based decision...")
+        log_info("Making AI-based decision...")
         buying_power = get_buying_power()
         decisions_data = make_decisions(buying_power, portfolio_overview, watchlist_overview)
     except Exception as e:
-        log(f"Error making AI-based decision: {e}")
+        log_error(f"Error making AI-based decision: {e}")
 
-    log(f"Total decisions: {len(decisions_data)}")
+    log_info(f"Total decisions: {len(decisions_data)}")
 
     while len(decisions_data) > 0:
-        log("Executing decisions...")
+        log_info("Executing decisions...")
         for decision_data in decisions_data:
             symbol = decision_data['symbol']
             decision = decision_data['decision']
             amount = decision_data['amount']
-            log(f"{symbol} > Decision: {decision} with amount ${amount}")
+            log_info(f"{symbol} > Decision: {decision} with amount ${amount}")
 
             if decision == "sell":
                 try:
@@ -320,10 +355,10 @@ def trading_bot():
                     if sell_resp and 'id' in sell_resp:
                         if sell_resp['id'] == "demo":
                             trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "sell", "result": "success", "details": "Demo mode"}
-                            log(f"{symbol} > Demo > Sold ${amount} worth of stock")
+                            log_info(f"{symbol} > Demo > Sold ${amount} worth of stock")
                         elif sell_resp['id'] == "cancelled":
                             trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "sell", "result": "cancelled", "details": "Cancelled by user"}
-                            log(f"{symbol} > Sell cancelled by user")
+                            log_info(f"{symbol} > Sell cancelled by user")
                         else:
                             details = {
                                 "quantity": sell_resp['quantity'],
@@ -331,14 +366,14 @@ def trading_bot():
                                 "fees": sell_resp['fees'],
                             }
                             trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "sell", "result": "success", "details": details}
-                            log(f"{symbol} > Sold ${amount} worth of stock")
+                            log_info(f"{symbol} > Sold ${amount} worth of stock")
                     else:
                         details = sell_resp['detail'] if 'detail' in sell_resp else sell_resp
                         trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "sell", "result": "error", "details": details}
-                        log(f"{symbol} > Error selling: {details}")
+                        log_error(f"{symbol} > Error selling: {details}")
                 except Exception as e:
                     trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "sell", "result": "error", "details": str(e)}
-                    log(f"{symbol} > Error selling: {e}")
+                    log_error(f"{symbol} > Error selling: {e}")
 
             if decision == "buy":
                 try:
@@ -346,10 +381,10 @@ def trading_bot():
                     if buy_resp and 'id' in buy_resp:
                         if buy_resp['id'] == "demo":
                             trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "buy", "result": "success", "details": "Demo mode"}
-                            log(f"{symbol} > Demo > Bought ${amount} worth of stock")
+                            log_info(f"{symbol} > Demo > Bought ${amount} worth of stock")
                         elif buy_resp['id'] == "cancelled":
                             trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "buy", "result": "cancelled", "details": "Cancelled by user"}
-                            log(f"{symbol} > Buy cancelled by user")
+                            log_info(f"{symbol} > Buy cancelled by user")
                         else:
                             details = {
                                 "quantity": buy_resp['quantity'],
@@ -357,28 +392,28 @@ def trading_bot():
                                 "fees": buy_resp['fees'],
                             }
                             trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "buy", "result": "success", "details": details}
-                            log(f"{symbol} > Bought ${amount} worth of stock")
+                            log_info(f"{symbol} > Bought ${amount} worth of stock")
                     else:
                         details = buy_resp['detail'] if 'detail' in buy_resp else buy_resp
                         trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "buy", "result": "error", "details": details}
-                        log(f"{symbol} > Error buying: {details}")
+                        log_error(f"{symbol} > Error buying: {details}")
                 except Exception as e:
                     trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "buy", "result": "error", "details": str(e)}
-                    log(f"{symbol} > Error buying: {e}")
+                    log_error(f"{symbol} > Error buying: {e}")
 
         if post_decisions_adjustment_count >= MAX_POST_DECISIONS_ADJUSTMENTS:
             break
 
         try:
-            log("Making AI-based post-decision analysis...")
+            log_info("Making AI-based post-decision analysis...")
             buying_power = get_buying_power()
             decisions_data = make_post_decisions_adjustment(buying_power, trading_results)
             post_decisions_adjustment_count += 1
         except Exception as e:
-            log(f"Error making post-decision analysis: {e}")
+            log_error(f"Error making post-decision analysis: {e}")
             break
 
-        log(f"Total post-decision adjustments: {len(decisions_data)}")
+        log_info(f"Total post-decision adjustments: {len(decisions_data)}")
 
     return trading_results
 
@@ -390,19 +425,19 @@ def main():
             market_hours = rh.get_market_hours(MARKET_MIC, datetime.now().strftime('%Y-%m-%d'))
             if market_hours and market_hours['is_open']:
                 run_interval_seconds = RUN_INTERVAL_SECONDS
-                log(f"Market {MARKET_MIC} is open, running trading bot in {MODE} mode...")
+                log_info(f"Market {MARKET_MIC} is open, running trading bot in {MODE} mode...")
                 trading_results = trading_bot()
                 total_sold = sum([result['amount'] for result in trading_results.values() if result['decision'] == "sell" and result['result'] == "success"])
                 total_bought = sum([result['amount'] for result in trading_results.values() if result['decision'] == "buy" and result['result'] == "success"])
-                log(f"Total sold: ${total_sold}, Total bought: ${total_bought}")
+                log_info(f"Total sold: ${total_sold}, Total bought: ${total_bought}")
             else:
                 run_interval_seconds = 60
-                log("Market is closed, waiting for next run...")
+                log_info("Market is closed, waiting for next run...")
         except Exception as e:
             run_interval_seconds = 60
-            log(f"Trading bot error: {e}")
+            log_error(f"Trading bot error: {e}")
 
-        log(f"Waiting for {run_interval_seconds} seconds...")
+        log_info(f"Waiting for {run_interval_seconds} seconds...")
         time.sleep(run_interval_seconds)
 
 

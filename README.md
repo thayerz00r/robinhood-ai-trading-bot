@@ -258,6 +258,7 @@ ROBINHOOD_PASSWORD = "..."                  # Robinhood password
 
 # Basic config parameters
 MODE = "demo"                               # Trading mode (demo, auto, manual)
+LOG_LEVEL = "INFO"                          # Log level (DEBUG, INFO)
 RUN_INTERVAL_SECONDS = 600                  # Trading interval in seconds (if the market is open)
 
 # Robinhood config parameters

@@ -21,8 +21,12 @@ def log(level, msg):
         level = "INFO"
     log_levels = {"DEBUG": 1, "INFO": 2, "WARNING": 3, "ERROR": 4}
     if log_levels.get(level, 2) >= log_levels.get(LOG_LEVEL, 2):
+        # cyan color
+        datetime_color_code = "\033[96m"
+        level_color_codes = {"DEBUG": "\033[94m", "INFO": "\033[92m", "WARNING": "\033[93m", "ERROR": "\033[91m"}
+        reset_code = "\033[0m"
         after_level_space = " " * (7 - len(level))
-        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]    [{level}]{after_level_space}{msg}")
+        print(f"{datetime_color_code}[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {level_color_codes[level]}[{level}]{reset_code}{after_level_space}{msg}")
 
 
 # Print debug log message

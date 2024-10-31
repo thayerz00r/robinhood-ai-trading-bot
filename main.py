@@ -145,48 +145,40 @@ def amount_to_quantity(symbol, amount):
     return quantity
 
 
-# Buy a stock by symbol and amount
-def buy_stock(symbol, amount):
+# Sell a stock by symbol and quantity
+def sell_stock(symbol, quantity):
     if MODE == "demo":
         return {"id": "demo"}
 
     if MODE == "manual":
-        confirm = input(f"Confirm buy for {symbol} at ${amount}? (yes/no): ")
+        confirm = input(f"Confirm sell for {symbol} of {quantity} shares? (yes/no): ")
         if confirm.lower() != "yes":
             return {"id": "cancelled"}
 
-    quantity = amount_to_quantity(symbol, amount)
-
-    log_debug(f"{symbol} > Buying {quantity} shares at ${amount}")
-
     random_pause()
-    buy_resp = rh.orders.order_buy_fractional_by_quantity(symbol, quantity)
-    if buy_resp is None:
-        raise Exception(f"Error buying {symbol}: No response")
-    return buy_resp
-
-
-# Sell a stock by symbol and amount
-def sell_stock(symbol, amount, available_quantity):
-    if MODE == "demo":
-        return {"id": "demo"}
-
-    if MODE == "manual":
-        confirm = input(f"Confirm sell for {symbol} at ${amount}? (yes/no): ")
-        if confirm.lower() != "yes":
-            return {"id": "cancelled"}
-
-    quantity = amount_to_quantity(symbol, amount)
-
-    log_debug(f"{symbol} > Selling {quantity} shares at ${amount}, available: {available_quantity}")
-    if quantity > available_quantity:
-        quantity = available_quantity
-
-    random_pause()
+    log_debug(f"{symbol} > Selling {quantity} shares")
     sell_resp = rh.orders.order_sell_fractional_by_quantity(symbol, quantity)
     if sell_resp is None:
         raise Exception(f"Error selling {symbol}: No response")
     return sell_resp
+
+
+# Buy a stock by symbol and quantity
+def buy_stock(symbol, quantity):
+    if MODE == "demo":
+        return {"id": "demo"}
+
+    if MODE == "manual":
+        confirm = input(f"Confirm buy for {symbol} of {quantity} shares? (yes/no): ")
+        if confirm.lower() != "yes":
+            return {"id": "cancelled"}
+
+    random_pause()
+    log_debug(f"{symbol} > Buying {quantity} shares")
+    buy_resp = rh.orders.order_buy_fractional_by_quantity(symbol, quantity)
+    if buy_resp is None:
+        raise Exception(f"Error buying {symbol}: No response")
+    return buy_resp
 
 
 # Make AI-based decisions on stock portfolio and watchlist
@@ -350,8 +342,12 @@ def trading_bot():
 
             if decision == "sell":
                 try:
+                    quantity = amount_to_quantity(symbol, amount)
                     available_quantity = float(portfolio_overview[symbol]['quantity'])
-                    sell_resp = sell_stock(symbol, amount, available_quantity)
+                    # TODO: Not sure if this is the best way to handle this
+                    if quantity > available_quantity:
+                        quantity = available_quantity
+                    sell_resp = sell_stock(symbol, quantity)
                     if sell_resp and 'id' in sell_resp:
                         if sell_resp['id'] == "demo":
                             trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "sell", "result": "success", "details": "Demo mode"}
@@ -377,7 +373,12 @@ def trading_bot():
 
             if decision == "buy":
                 try:
-                    buy_resp = buy_stock(symbol, amount)
+                    buying_power = get_buying_power()
+                    # TODO: Not sure if this is the best way to handle this
+                    if amount > buying_power:
+                        amount = buying_power
+                    quantity = amount_to_quantity(symbol, amount)
+                    buy_resp = buy_stock(symbol, quantity)
                     if buy_resp and 'id' in buy_resp:
                         if buy_resp['id'] == "demo":
                             trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "buy", "result": "success", "details": "Demo mode"}

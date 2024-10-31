@@ -49,9 +49,10 @@ def log_error(msg):
 def run_with_retries(func, *args, max_retries=3, delay=60, **kwargs):
     for attempt in range(max_retries):
         result = func(*args, **kwargs)
+        log_debug(f"Function: {func.__name__}, Parameters: {args}, Attempt: {attempt + 1}, Result: {result}")
         if result is not None:
             return result
-        log_debug(f"Attempt {attempt + 1}/{max_retries} failed, retrying in {delay} seconds...")
+        log_debug(f"Function: {func.__name__}, Parameters: {args}, Attempt: {attempt + 1}, Retrying in {delay} seconds...")
         time.sleep(delay)
     return None
 
@@ -70,11 +71,15 @@ def is_market_open():
 
 # Round money
 def round_money(price, decimals=2):
+    if price is None:
+        return None
     return round(float(price), decimals)
 
 
 # Round quantity
 def round_quantity(quantity, decimals=6):
+    if quantity is None:
+        return None
     return round(float(quantity), decimals)
 
 
@@ -101,13 +106,29 @@ def extract_watchlist_data(stock_data):
     }
 
 
+# Extract sell response data
+def extract_sell_response_data(sell_resp):
+    return {
+        "quantity": round_quantity(sell_resp['quantity']),
+        "price": round_money(sell_resp['price']),
+    }
+
+
+# Extract buy response data
+def extract_buy_response_data(buy_resp):
+    return {
+        "quantity": round_quantity(buy_resp['quantity']),
+        "price": round_money(buy_resp['price']),
+    }
+
+
 # Enrich stock data with moving averages
 def enrich_with_moving_averages(stock_data, symbol):
     prices = get_historical_data(symbol)
     if len(prices) >= 200:
         moving_avg_50, moving_avg_200 = calculate_moving_averages(prices)
-        stock_data["50_day_mavg"] = round_money(moving_avg_50)
-        stock_data["200_day_mavg"] = round_money(moving_avg_200)
+        stock_data["50_day_mavg_price"] = round_money(moving_avg_50)
+        stock_data["200_day_mavg_price"] = round_money(moving_avg_200)
     return stock_data
 
 
@@ -118,9 +139,9 @@ def enrich_with_analyst_ratings(stock_data, symbol):
         last_sell_rating = next((rating for rating in ratings['ratings'] if rating['type'] == "sell"), None)
         last_buy_rating = next((rating for rating in ratings['ratings'] if rating['type'] == "buy"), None)
         if last_sell_rating:
-            stock_data["analyst_rating_sell_text"] = last_sell_rating['text'].decode('utf-8')
+            stock_data["robinhood_analyst_sell_opinion"] = last_sell_rating['text'].decode('utf-8')
         if last_buy_rating:
-            stock_data["analyst_rating_buy_text"] = last_buy_rating['text'].decode('utf-8')
+            stock_data["robinhood_analyst_buy_opinion"] = last_buy_rating['text'].decode('utf-8')
     if 'summary' in ratings and ratings['summary']:
         summary = ratings['summary']
         total_ratings = sum([summary['num_buy_ratings'], summary['num_hold_ratings'], summary['num_sell_ratings']])
@@ -128,7 +149,7 @@ def enrich_with_analyst_ratings(stock_data, symbol):
             buy_percent = summary['num_buy_ratings'] / total_ratings * 100
             sell_percent = summary['num_sell_ratings'] / total_ratings * 100
             hold_percent = summary['num_hold_ratings'] / total_ratings * 100
-            stock_data["analyst_rating_summary"] = f"Buy: {buy_percent:.0f}%, Sell: {sell_percent:.0f}%, Hold: {hold_percent:.0f}%"
+            stock_data["robinhood_analyst_summary_distribution"] = f"sell: {sell_percent:.0f}%, buy: {buy_percent:.0f}%, hold: {hold_percent:.0f}%"
     return stock_data
 
 
@@ -354,7 +375,7 @@ def trading_bot():
         log_info(f"Total decisions: {len(decisions_data)}")
         log_info("Adjusting decisions based on trading parameters...")
         decisions_data = adjust_decisions(decisions_data)
-        log_debug(f"Adjusted decisions: {decisions_data}")
+        log_debug(f"Adjusted decisions:\n{json.dumps(decisions_data, indent=1)}")
         log_info("Executing decisions...")
         for decision_data in decisions_data:
             symbol = decision_data['symbol']
@@ -373,11 +394,7 @@ def trading_bot():
                             trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "sell", "result": "cancelled", "details": "Cancelled by user"}
                             log_info(f"{symbol} > Sell cancelled by user")
                         else:
-                            details = {
-                                "quantity": sell_resp['quantity'],
-                                "price": sell_resp['price'],
-                                "fees": sell_resp['fees'],
-                            }
+                            details = extract_sell_response_data(sell_resp)
                             trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "sell", "result": "success", "details": details}
                             log_info(f"{symbol} > Sold ${amount} worth of stock")
                     else:
@@ -399,11 +416,7 @@ def trading_bot():
                             trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "buy", "result": "cancelled", "details": "Cancelled by user"}
                             log_info(f"{symbol} > Buy cancelled by user")
                         else:
-                            details = {
-                                "quantity": buy_resp['quantity'],
-                                "price": buy_resp['price'],
-                                "fees": buy_resp['fees'],
-                            }
+                            details = extract_buy_response_data(buy_resp)
                             trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "buy", "result": "success", "details": details}
                             log_info(f"{symbol} > Bought ${amount} worth of stock")
                     else:

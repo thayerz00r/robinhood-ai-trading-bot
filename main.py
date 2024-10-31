@@ -444,4 +444,9 @@ def main():
 
 # Run the main function
 if __name__ == '__main__':
+    if MODE == "auto":
+        confirm = input(f"Are you sure you want to run the bot in {MODE} mode? (yes/no): ")
+        if confirm.lower() != "yes":
+            log_warning("Exiting the bot...")
+            exit()
     main()

@@ -45,8 +45,8 @@ def log_error(msg):
     log("ERROR", msg)
 
 
-# Run a function with retries and random delays
-def run_with_retries(func, *args, max_retries=3, delay=60, **kwargs):
+# Run a Robinhood function with retries and delay between attempts
+def rh_run_with_retries(func, *args, max_retries=3, delay=60, **kwargs):
     for attempt in range(max_retries):
         result = func(*args, **kwargs)
         log_debug(f"Function: {func.__name__}, Parameters: {args}, Attempt: {attempt + 1}, Result: {result}")
@@ -155,7 +155,7 @@ def enrich_with_analyst_ratings(stock_data, symbol):
 
 # Get my buying power
 def get_buying_power():
-    resp = run_with_retries(rh.profiles.load_account_profile)
+    resp = rh_run_with_retries(rh.profiles.load_account_profile)
     if resp is None or 'buying_power' not in resp:
         raise Exception("Error getting profile data: No response")
     buying_power = float(resp['buying_power'])
@@ -164,7 +164,7 @@ def get_buying_power():
 
 # Get my stocks
 def get_my_stocks():
-    resp = run_with_retries(rh.build_holdings)
+    resp = rh_run_with_retries(rh.build_holdings)
     if resp is None:
         raise Exception("Error getting holdings data: No response")
     return resp
@@ -172,7 +172,7 @@ def get_my_stocks():
 
 # Get watchlist stocks by name
 def get_watchlist_stocks(name):
-    resp = run_with_retries(rh.get_watchlist_by_name, name)
+    resp = rh_run_with_retries(rh.get_watchlist_by_name, name)
     if resp is None or 'results' not in resp:
         raise Exception(f"Error getting watchlist {name}: No response")
     return resp['results']
@@ -180,7 +180,7 @@ def get_watchlist_stocks(name):
 
 # Get analyst ratings for a stock by symbol
 def get_ratings(symbol):
-    resp = run_with_retries(rh.stocks.get_ratings, symbol)
+    resp = rh_run_with_retries(rh.stocks.get_ratings, symbol)
     if resp is None:
         raise Exception(f"Error getting ratings for {symbol}: No response")
     return resp
@@ -188,7 +188,7 @@ def get_ratings(symbol):
 
 # Get historical stock data by symbol
 def get_historical_data(symbol, interval="day", span="year"):
-    resp = run_with_retries(rh.stocks.get_stock_historicals,symbol, interval=interval, span=span)
+    resp = rh_run_with_retries(rh.stocks.get_stock_historicals, symbol, interval=interval, span=span)
     if resp is None:
         raise Exception(f"Error getting historical data for {symbol}: No response")
     prices = [float(day['close_price']) for day in resp]
@@ -205,7 +205,7 @@ def sell_stock(symbol, amount):
         if confirm.lower() != "yes":
             return {"id": "cancelled"}
 
-    sell_resp = run_with_retries(rh.orders.order_sell_fractional_by_price, symbol, amount)
+    sell_resp = rh_run_with_retries(rh.orders.order_sell_fractional_by_price, symbol, amount)
     if sell_resp is None:
         raise Exception(f"Error selling {symbol}: No response")
     return sell_resp
@@ -221,7 +221,7 @@ def buy_stock(symbol, amount):
         if confirm.lower() != "yes":
             return {"id": "cancelled"}
 
-    buy_resp = run_with_retries(rh.orders.order_buy_fractional_by_price, symbol, amount)
+    buy_resp = rh_run_with_retries(rh.orders.order_buy_fractional_by_price, symbol, amount)
     if buy_resp is None:
         raise Exception(f"Error buying {symbol}: No response")
     return buy_resp

@@ -9,6 +9,7 @@ import re
 import random
 from config import *
 
+
 # Initialize session and login
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
 rh.login(ROBINHOOD_USERNAME, ROBINHOOD_PASSWORD)
@@ -20,7 +21,8 @@ def log(level, msg):
         level = "INFO"
     log_levels = {"DEBUG": 1, "INFO": 2, "WARNING": 3, "ERROR": 4}
     if log_levels.get(level, 2) >= log_levels.get(LOG_LEVEL, 2):
-        print(f"[{datetime.now()}]  [{level}]   {msg}")
+        after_level_space = " " * (7 - len(level))
+        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]    [{level}]{after_level_space}{msg}")
 
 
 # Print debug log message
@@ -49,8 +51,8 @@ def run_with_retries(func, *args, max_retries=3, min_delay=60, max_delay=60, **k
         result = func(*args, **kwargs)
         if result is not None:
             return result
-        log_debug(f"Attempt {attempt + 1}/{max_retries} failed, retrying...")
         delay = random.uniform(min_delay, max_delay)
+        log_debug(f"Attempt {attempt + 1}/{max_retries} failed, retrying in {delay} seconds...")
         time.sleep(delay)
     return None
 

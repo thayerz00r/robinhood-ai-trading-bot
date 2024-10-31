@@ -265,8 +265,6 @@ RUN_INTERVAL_SECONDS = 600                  # Trading interval in seconds (if th
 MARKET_MIC = "XNYS"                         # Market MIC for open hours check (e.g. XNYS, XNAS)
 WATCHLIST_NAMES = []                        # Watchlist names (can be empty, or "My First List", "My Second List", etc.)
 WATCHLIST_OVERVIEW_LIMIT = 10               # Number of stocks to process in decision-making (e.g. 20)
-MIN_API_CALL_PAUSE_SECONDS = 0.5            # Minimum pause between Robinhood API calls in seconds (to avoid rate limits)
-MAX_API_CALL_PAUSE_SECONDS = 1.5            # Maximum pause between Robinhood API calls in seconds (to avoid rate limits)
 
 # OpenAI config params
 MAX_POST_DECISIONS_ADJUSTMENTS = 1          # Maximum number of adjustments to make (0 - disable adjustments)

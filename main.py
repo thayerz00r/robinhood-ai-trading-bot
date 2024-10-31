@@ -147,34 +147,33 @@ def amount_to_quantity(symbol, amount):
     return quantity
 
 
-# Sell a stock by symbol and quantity
-def sell_stock(symbol, quantity):
+# Sell a stock by symbol and amount
+def sell_stock(symbol, amount):
     if MODE == "demo":
         return {"id": "demo"}
 
     if MODE == "manual":
-        confirm = input(f"Confirm sell for {symbol} of {quantity} shares? (yes/no): ")
+        confirm = input(f"Confirm sell for {symbol} of ${amount}? (yes/no): ")
         if confirm.lower() != "yes":
             return {"id": "cancelled"}
 
-    sell_resp = run_with_retries(rh.orders.order_sell_fractional_by_quantity, symbol, quantity)
+    sell_resp = run_with_retries(rh.orders.order_sell_fractional_by_price, symbol, amount)
     if sell_resp is None:
         raise Exception(f"Error selling {symbol}: No response")
     return sell_resp
 
 
-# Buy a stock by symbol and quantity
-def buy_stock(symbol, quantity):
+# Buy a stock by symbol and amount
+def buy_stock(symbol, amount):
     if MODE == "demo":
         return {"id": "demo"}
 
     if MODE == "manual":
-        confirm = input(f"Confirm buy for {symbol} of {quantity} shares? (yes/no): ")
+        confirm = input(f"Confirm buy for {symbol} of ${amount}? (yes/no): ")
         if confirm.lower() != "yes":
             return {"id": "cancelled"}
 
-    log_debug(f"{symbol} > Buying {quantity} shares")
-    buy_resp = run_with_retries(rh.orders.order_buy_fractional_by_quantity, symbol, quantity)
+    buy_resp = run_with_retries(rh.orders.order_buy_fractional_by_price, symbol, amount)
     if buy_resp is None:
         raise Exception(f"Error buying {symbol}: No response")
     return buy_resp
@@ -260,6 +259,17 @@ def make_ai_post_decisions_adjustment(buying_power, trading_results):
     return decisions
 
 
+# Adjust decisions based on trading parameters
+def adjust_decisions(decisions):
+    sell_decisions = [decision for decision in decisions if decision['decision'] == "sell"]
+    buy_decisions = [decision for decision in decisions if decision['decision'] == "buy"]
+    for decision in sell_decisions:
+        decision['amount'] = max(MIN_SELLING_AMOUNT_USD, min(MAX_SELLING_AMOUNT_USD, decision['amount']))
+    for decision in buy_decisions:
+        decision['amount'] = max(MIN_BUYING_AMOUNT_USD, min(MAX_BUYING_AMOUNT_USD, decision['amount']))
+    return sell_decisions + buy_decisions
+
+
 # Main trading bot function
 def trading_bot():
     log_info("Getting my stocks to proceed...")
@@ -327,6 +337,9 @@ def trading_bot():
     log_info(f"Total decisions: {len(decisions_data)}")
 
     while len(decisions_data) > 0:
+        log_info("Adjusting decisions based on trading parameters...")
+        decisions_data = adjust_decisions(decisions_data)
+        log_debug(f"Adjusted decisions: {decisions_data}")
         log_info("Executing decisions...")
         for decision_data in decisions_data:
             symbol = decision_data['symbol']
@@ -336,13 +349,7 @@ def trading_bot():
 
             if decision == "sell":
                 try:
-                    quantity = amount_to_quantity(symbol, amount)
-                    available_quantity = float(portfolio_overview[symbol]['quantity'])
-                    # TODO: Not sure if this is the best way to handle this
-                    # if quantity > available_quantity:
-                    #     quantity = available_quantity
-                    log_debug(f"{symbol} > Trying to sell ${amount}, quantity: {quantity}. Available: {available_quantity}")
-                    sell_resp = sell_stock(symbol, quantity)
+                    sell_resp = sell_stock(symbol, amount)
                     if sell_resp and 'id' in sell_resp:
                         if sell_resp['id'] == "demo":
                             trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "sell", "result": "success", "details": "Demo mode"}
@@ -368,13 +375,7 @@ def trading_bot():
 
             if decision == "buy":
                 try:
-                    buying_power = get_buying_power()
-                    # TODO: Not sure if this is the best way to handle this
-                    # if amount > buying_power:
-                    #     amount = buying_power
-                    quantity = amount_to_quantity(symbol, amount)
-                    log_debug(f"{symbol} > Trying to buy ${amount}, quantity: {quantity}. Buying power: ${buying_power}")
-                    buy_resp = buy_stock(symbol, quantity)
+                    buy_resp = buy_stock(symbol, amount)
                     if buy_resp and 'id' in buy_resp:
                         if buy_resp['id'] == "demo":
                             trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "buy", "result": "success", "details": "Demo mode"}
@@ -420,6 +421,7 @@ def main():
     while True:
         try:
             market_hours = run_with_retries(rh.get_market_hours, MARKET_MIC, datetime.now().strftime('%Y-%m-%d'))
+            log_debug(f"Market hours: {market_hours}")
             if market_hours and market_hours['is_open']:
                 run_interval_seconds = RUN_INTERVAL_SECONDS
                 log_info(f"Market {MARKET_MIC} is open, running trading bot in {MODE} mode...")

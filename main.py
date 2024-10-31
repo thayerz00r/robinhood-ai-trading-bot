@@ -180,8 +180,30 @@ def buy_stock(symbol, quantity):
     return buy_resp
 
 
+# Make AI request to OpenAI API
+def make_ai_request(prompt):
+    ai_resp = openai_client.chat.completions.create(
+        model=OPENAI_MODEL_NAME,
+        messages=[
+            {"role": "system", "content": "You are a precise trading robot that only responds in valid json."},
+            {"role": "user", "content": prompt}
+        ]
+    )
+    return ai_resp
+
+
+# Parse AI response
+def parse_ai_response(ai_response):
+    try:
+        ai_content = re.sub(r'```json|```', '', ai_response.choices[0].message.content.strip())
+        decisions = json.loads(ai_content)
+    except json.JSONDecodeError as e:
+        raise Exception("Invalid JSON response from OpenAI: " + ai_response.choices[0].message.content.strip())
+    return decisions
+
+
 # Make AI-based decisions on stock portfolio and watchlist
-def make_decisions(buying_power, portfolio_overview, watchlist_overview):
+def make_ai_decisions(buying_power, portfolio_overview, watchlist_overview):
     ai_prompt = (
         f"Analyze the stock portfolio and watchlist to make investment decisions. "
         f"Suggest which stocks to sell first from the portfolio to increase buying power, "
@@ -203,28 +225,15 @@ def make_decisions(buying_power, portfolio_overview, watchlist_overview):
         "Return only the JSON array, without explanation or extra text. "
         "If no decisions are made, return an empty array."
     )
-    log_debug(ai_prompt)
-
-    ai_response = openai_client.chat.completions.create(
-        model=OPENAI_MODEL_NAME,
-        messages=[
-            {"role": "system", "content": "You are a precise trading robot that only responds in valid json after getting information about a stocks portfolio and watchlist."},
-            {"role": "user", "content": ai_prompt}
-        ]
-    )
-
-    try:
-        ai_content = re.sub(r'```json|```', '', ai_response.choices[0].message.content.strip())
-        log_debug(ai_content)
-        decisions = json.loads(ai_content)
-    except json.JSONDecodeError as e:
-        raise Exception("Invalid JSON response from OpenAI: " + ai_response.choices[0].message.content.strip())
-
+    log_debug(f"AI making-decisions prompt:\n{ai_prompt}")
+    ai_response = make_ai_request(ai_prompt)
+    log_debug(f"AI making-decisions response:\n{ai_response.choices[0].message.content.strip()}")
+    decisions = parse_ai_response(ai_response)
     return decisions
 
 
 # Make post-decisions adjustment based on trading results
-def make_post_decisions_adjustment(buying_power, trading_results):
+def make_ai_post_decisions_adjustment(buying_power, trading_results):
     ai_prompt = (
         "Analyze the trading results based on your previous decisions. "
         "Make adjustments if needed. "
@@ -244,24 +253,10 @@ def make_post_decisions_adjustment(buying_power, trading_results):
         "Return only the JSON array, without explanation or extra text. "
         "If no decisions are made, return an empty array."
     )
-
-    log_debug(ai_prompt)
-
-    ai_response = openai_client.chat.completions.create(
-        model=OPENAI_MODEL_NAME,
-        messages=[
-            {"role": "system", "content": "You are a precise trading robot that only responds in valid json after getting information about a trading results."},
-            {"role": "user", "content": ai_prompt}
-        ]
-    )
-
-    try:
-        ai_content = re.sub(r'```json|```', '', ai_response.choices[0].message.content.strip())
-        log_debug(ai_content)
-        decisions = json.loads(ai_content)
-    except json.JSONDecodeError:
-        raise Exception("Invalid JSON response from OpenAI: " + ai_response.choices[0].message.content.strip())
-
+    log_debug(f"AI post-decisions-adjustment prompt:\n{ai_prompt}")
+    ai_response = make_ai_request(ai_prompt)
+    log_debug(f"AI post-decisions-adjustment response:\n{ai_response.choices[0].message.content.strip()}")
+    decisions = parse_ai_response(ai_response)
     return decisions
 
 
@@ -325,7 +320,7 @@ def trading_bot():
     try:
         log_info("Making AI-based decision...")
         buying_power = get_buying_power()
-        decisions_data = make_decisions(buying_power, portfolio_overview, watchlist_overview)
+        decisions_data = make_ai_decisions(buying_power, portfolio_overview, watchlist_overview)
     except Exception as e:
         log_error(f"Error making AI-based decision: {e}")
 
@@ -409,7 +404,7 @@ def trading_bot():
         try:
             log_info("Making AI-based post-decision analysis...")
             buying_power = get_buying_power()
-            decisions_data = make_post_decisions_adjustment(buying_power, trading_results)
+            decisions_data = make_ai_post_decisions_adjustment(buying_power, trading_results)
             post_decisions_adjustment_count += 1
         except Exception as e:
             log_error(f"Error making post-decision analysis: {e}")

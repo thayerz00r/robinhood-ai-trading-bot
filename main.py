@@ -56,10 +56,12 @@ def log_error(msg):
 def rh_run_with_retries(func, *args, max_retries=3, delay=60, **kwargs):
     for attempt in range(max_retries):
         result = func(*args, **kwargs)
-        log_debug(f"Function: {func.__name__}, Parameters: {args}, Attempt: {attempt + 1}, Result: {result}")
+        msg = f"Function: {func.__name__}, Parameters: {args}, Attempt: {attempt + 1}/{max_retries}, Result: {result}"
+        msg = msg[:1000] + '...' if len(msg) > 1000 else msg
+        log_debug(msg)
         if result is not None:
             return result
-        log_debug(f"Function: {func.__name__}, Parameters: {args}, Attempt: {attempt + 1}, Retrying in {delay} seconds...")
+        log_debug(f"Function: {func.__name__}, Parameters: {args}, Retrying in {delay} seconds...")
         time.sleep(delay)
     return None
 

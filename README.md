@@ -1,10 +1,3 @@
-![Jay and Silent Bob](images/jay_and_silent_bob.png)
-
-Fuck, fuck, fuck, motherfuck,<br />
-Rollin' stocks, makin' trades,<br />
-Time to cash in, watch those gains
-
-
 # 🤖 Robinhood AI Trading Bot
 ## ⚡ TL;DR
 Once you've added your OpenAI API Key and Robinhood credentials, and run this bot in "Auto" mode, it will analyze your portfolio stocks and some of your watchlist stocks (if available). 

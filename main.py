@@ -68,7 +68,6 @@ def rh_run_with_retries(func, *args, max_retries=3, delay=60, **kwargs):
 
 # Check if the market is open
 def is_market_open():
-    # market_hours = run_with_retries(rh.get_market_hours, MARKET_MIC, datetime.now().strftime('%Y-%m-%d'))
     eastern = timezone('US/Eastern')
     now = datetime.now(eastern)
     if now.weekday() >= 5:
@@ -171,11 +170,11 @@ def get_buying_power():
     return buying_power
 
 
-# Get my stocks
-def get_my_stocks():
+# Get portfolio stocks
+def get_portfolio_stocks():
     resp = rh_run_with_retries(rh.build_holdings)
     if resp is None:
-        raise Exception("Error getting holdings data: No response")
+        raise Exception("Error getting portfolio stocks: No response")
     return resp
 
 
@@ -330,32 +329,40 @@ def adjust_decisions(decisions):
 
 # Main trading bot function
 def trading_bot():
-    log_info("Getting my stocks to proceed...")
-    my_stocks = get_my_stocks()
+    log_info("Getting portfolio stocks...")
+    portfolio_stocks = get_portfolio_stocks()
 
-    log_info(f"Total stocks in portfolio: {len(my_stocks)}")
+    log_debug(f"Portfolio stocks total: {len(portfolio_stocks)}")
 
-    log_info("Prepare portfolio overview for AI analysis...")
+    portfolio_stocks_value = 0
+    for stock in portfolio_stocks.values():
+        portfolio_stocks_value += float(stock['price']) * float(stock['quantity'])
+    portfolio = [f"{symbol} ({round(float(stock['price']) * float(stock['quantity']) / portfolio_stocks_value * 100, 2)}%)" for symbol, stock in portfolio_stocks.items()]
+    log_info(f"Portfolio stocks to proceed: {"None" if len(portfolio) == 0 else ', '.join(portfolio)}")
+
+    log_info("Prepare portfolio stocks for AI analysis...")
     portfolio_overview = {}
-    for symbol, stock_data in my_stocks.items():
+    for symbol, stock_data in portfolio_stocks.items():
         portfolio_overview[symbol] = extract_my_stocks_data(stock_data)
         portfolio_overview[symbol] = enrich_with_moving_averages(portfolio_overview[symbol], symbol)
         portfolio_overview[symbol] = enrich_with_analyst_ratings(portfolio_overview[symbol], symbol)
 
-    log_info("Getting watchlist stocks to proceed...")
+    log_info("Getting watchlist stocks...")
     watchlist_stocks = []
     for watchlist_name in WATCHLIST_NAMES:
         try:
             watchlist_stocks.extend(get_watchlist_stocks(watchlist_name))
-            watchlist_stocks = [stock for stock in watchlist_stocks if stock['symbol'] not in my_stocks.keys()]
+            watchlist_stocks = [stock for stock in watchlist_stocks if stock['symbol'] not in portfolio_stocks.keys()]
         except Exception as e:
             log_error(f"Error getting watchlist stocks for {watchlist_name}: {e}")
 
-    log_info(f"Total watchlist stocks: {len(watchlist_stocks)}")
+    log_debug(f"Watchlist stocks total: {len(watchlist_stocks)}")
 
     if len(watchlist_stocks) > WATCHLIST_OVERVIEW_LIMIT:
-        log_info(f"Limiting watchlist stocks to overview limit of {WATCHLIST_OVERVIEW_LIMIT} (random selection)...")
+        log_debug(f"Limiting watchlist stocks to overview limit of {WATCHLIST_OVERVIEW_LIMIT} (random selection)...")
         watchlist_stocks = np.random.choice(watchlist_stocks, WATCHLIST_OVERVIEW_LIMIT, replace=False)
+
+    log_info(f"Watchlist stocks to proceed: {', '.join([stock['symbol'] for stock in watchlist_stocks])}")
 
     log_info("Prepare watchlist overview for AI analysis...")
     watchlist_overview = {}
@@ -366,7 +373,7 @@ def trading_bot():
         watchlist_overview[symbol] = enrich_with_analyst_ratings(watchlist_overview[symbol], symbol)
 
     if len(portfolio_overview) == 0 and len(watchlist_overview) == 0:
-        log_info("No stocks to analyze, skipping AI-based decision-making...")
+        log_warning("No stocks to analyze, skipping AI-based decision-making...")
         return {}
 
     decisions_data = []
@@ -380,11 +387,14 @@ def trading_bot():
     except Exception as e:
         log_error(f"Error making AI-based decision: {e}")
 
+    log_debug(f"Total decisions: {len(decisions_data)}")
+
     while len(decisions_data) > 0:
-        log_info(f"Total decisions: {len(decisions_data)}")
         log_info("Adjusting decisions based on trading parameters...")
         decisions_data = adjust_decisions(decisions_data)
+
         log_debug(f"Adjusted decisions:\n{json.dumps(decisions_data, indent=1)}")
+
         log_info("Executing decisions...")
         for decision_data in decisions_data:
             symbol = decision_data['symbol']
@@ -440,10 +450,11 @@ def trading_bot():
             break
 
         try:
-            log_info("Making AI-based post-decision analysis...")
+            post_decisions_adjustment_count += 1
+            log_info(f"Making AI-based post-decision analysis, attempt: {post_decisions_adjustment_count}/{MAX_POST_DECISIONS_ADJUSTMENTS}...")
             buying_power = round_money(get_buying_power())
             decisions_data = make_ai_post_decisions_adjustment(buying_power, trading_results)
-            post_decisions_adjustment_count += 1
+            log_debug(f"Total post-decision adjustments: {len(decisions_data)}")
         except Exception as e:
             log_error(f"Error making post-decision analysis: {e}")
             break
@@ -464,21 +475,9 @@ def main():
                 sold_stocks = [f"{result['symbol']} (${result['amount']})" for result in trading_results.values() if result['decision'] == "sell" and result['result'] == "success"]
                 bought_stocks = [f"{result['symbol']} (${result['amount']})" for result in trading_results.values() if result['decision'] == "buy" and result['result'] == "success"]
                 errors = [f"{result['symbol']} ({result['details']})" for result in trading_results.values() if result['result'] == "error"]
-                log_info(f"Sold stocks: {"None" if len(sold_stocks) == 0 else ', '.join(sold_stocks)}")
-                log_info(f"Bought stocks: {"None" if len(bought_stocks) == 0 else ', '.join(bought_stocks)}")
+                log_info(f"Stocks sold: {"None" if len(sold_stocks) == 0 else ', '.join(sold_stocks)}")
+                log_info(f"Stocks bought: {"None" if len(bought_stocks) == 0 else ', '.join(bought_stocks)}")
                 log_info(f"Errors: {"None" if len(errors) == 0 else ', '.join(errors)}")
-
-                log_info("Getting portfolio and buying power...")
-                my_stocks = get_my_stocks()
-                my_stocks_value = 0
-                for stock in my_stocks.values():
-                    my_stocks_value += float(stock['price']) * float(stock['quantity'])
-                portfolio = [f"{symbol} ({round(float(stock['price']) * float(stock['quantity']) / my_stocks_value * 100, 2)}%)" for symbol, stock in my_stocks.items()]
-                buy_power = get_buying_power()
-
-                log_info(f"Portfolio: {"None" if len(portfolio) == 0 else ', '.join(portfolio)}")
-                log_info(f"Portfolio value: ${round_money(my_stocks_value)}")
-                log_info(f"Buying power: ${buy_power}")
             else:
                 run_interval_seconds = 60
                 log_info("Market is closed, waiting for next run...")

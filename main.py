@@ -239,10 +239,7 @@ def buy_stock(symbol, amount):
 def make_ai_request(prompt):
     ai_resp = openai_client.chat.completions.create(
         model=OPENAI_MODEL_NAME,
-        messages=[
-            {"role": "system", "content": "You are a precise trading robot that only responds in valid json."},
-            {"role": "user", "content": prompt}
-        ]
+        messages=[{"role": "user", "content": prompt}]
     )
     return ai_resp
 
@@ -260,25 +257,20 @@ def parse_ai_response(ai_response):
 # Make AI-based decisions on stock portfolio and watchlist
 def make_ai_decisions(buying_power, portfolio_overview, watchlist_overview):
     ai_prompt = (
-        f"Analyze the stock portfolio and watchlist to make investment decisions. "
-        f"Suggest which stocks to sell first from the portfolio to increase buying power, "
-        f"and then determine if any stock from either the portfolio or the watchlist is worth buying. "
-        f"Return sell decisions in the order they should be executed to maximize buying power, "
-        f"and then provide buy decisions based on the resulting buying power.\n\n"
-        f"Portfolio overview:\n{json.dumps(portfolio_overview, indent=1)}\n\n"
-        f"Watchlist overview:\n{json.dumps(watchlist_overview, indent=1)}\n\n"
-        f"Total buying power in USD: {buying_power}\n\n"
-        f"Guidelines for sell and buy amounts in USD:\n"
-        f"- Min sell: {round_money(MIN_SELLING_AMOUNT_USD)}\n"
-        f"- Max sell: {round_money(MAX_SELLING_AMOUNT_USD)}\n"
-        f"- Min buy: {round_money(MIN_BUYING_AMOUNT_USD)}\n"
-        f"- Max buy: {round_money(MAX_BUYING_AMOUNT_USD)}\n\n"
-        f"Provide a JSON response in this format:\n"
+        "You are an investment advisor managing a stock portfolio and watchlist. "
+        "Analyze both and suggest which stocks to sell first to maximize buying power and profit potential, "
+        "followed by any potential buy opportunities that align with available funds and market conditions. "
+        "Only respond in JSON format.\n\n"
+        f"Portfolio:\n{json.dumps(portfolio_overview, indent=1)}\n\n"
+        f"Watchlist:\n{json.dumps(watchlist_overview, indent=1)}\n\n"
+        f"Total buying power (USD): {buying_power}\n\n"
+        f"Sell amounts guidelines (USD): Min: {MIN_SELLING_AMOUNT_USD}, Max: {MAX_SELLING_AMOUNT_USD}\n"
+        f"Buy amounts guidelines (USD): Min: {MIN_BUYING_AMOUNT_USD}, Max: {MAX_BUYING_AMOUNT_USD}\n\n"
+        "Response format:\n"
         '[{"symbol": "<symbol>", "decision": "<decision>", "amount": <amount>}, ...]\n'
         "Decision options: buy, sell, hold\n"
-        "Amount is the suggested amount to buy or sell in USD.\n"
-        "Return only the JSON array, without explanation or extra text. "
-        "If no decisions are made, return an empty array."
+        "Amount represents the recommended buy or sell amount in USD. "
+        "Return only the JSON array; no explanations. If no decisions are necessary, return an empty array."
     )
     log_debug(f"AI making-decisions prompt:\n{ai_prompt}")
     ai_response = make_ai_request(ai_prompt)
@@ -290,23 +282,19 @@ def make_ai_decisions(buying_power, portfolio_overview, watchlist_overview):
 # Make post-decisions adjustment based on trading results
 def make_ai_post_decisions_adjustment(buying_power, trading_results):
     ai_prompt = (
-        "Analyze the trading results based on your previous decisions. "
-        "Make adjustments if needed. "
-        "Return sell decisions in the order they should be executed to maximize buying power, "
-        "and then provide buy decisions based on the resulting buying power.\n\n"
+        "You are an investment advisor responsible for reviewing and adjusting prior trading decisions. "
+        "Analyze the provided trading results to ensure they maximize buying power and profit potential. "
+        "Reorder sell decisions as needed to optimize buying power, then provide buy recommendations based on the updated buying power. "
+        "Only respond in JSON format.\n\n"
         f"Trading results:\n{json.dumps(trading_results, indent=1)}\n\n"
-        f"Total buying power in USD: {buying_power}\n\n"
-        "Guidelines for sell and buy amounts in USD:\n"
-        f"- Min sell: {round_money(MIN_SELLING_AMOUNT_USD)}\n"
-        f"- Max sell: {round_money(MAX_SELLING_AMOUNT_USD)}\n"
-        f"- Min buy: {round_money(MIN_BUYING_AMOUNT_USD)}\n"
-        f"- Max buy: {round_money(MAX_BUYING_AMOUNT_USD)}\n\n"
-        "Provide a JSON response in this format:\n"
+        f"Total buying power (USD): {buying_power}\n\n"
+        f"Sell amounts guidelines (USD): Min: {MIN_SELLING_AMOUNT_USD}, Max: {MAX_SELLING_AMOUNT_USD}\n"
+        f"Buy amounts guidelines (USD): Min: {MIN_BUYING_AMOUNT_USD}, Max: {MAX_BUYING_AMOUNT_USD}\n\n"
+        "Response format:\n"
         '[{"symbol": "<symbol>", "decision": "<decision>", "amount": <amount>}, ...]\n'
         "Decision options: buy, sell, hold\n"
-        "Amount is the suggested amount to buy or sell in USD.\n"
-        "Return only the JSON array, without explanation or extra text. "
-        "If no decisions are made, return an empty array."
+        "Amount represents the recommended buy or sell amount in USD. "
+        "Return only the JSON array; no explanations. If no adjustments are necessary, return an empty array."
     )
     log_debug(f"AI post-decisions-adjustment prompt:\n{ai_prompt}")
     ai_response = make_ai_request(ai_prompt)

@@ -17,15 +17,19 @@ rh.login(ROBINHOOD_USERNAME, ROBINHOOD_PASSWORD)
 
 # Print log message
 def log(level, msg):
-    if level not in ["DEBUG", "INFO", "WARNING", "ERROR"]:
-        level = "INFO"
     log_levels = {"DEBUG": 1, "INFO": 2, "WARNING": 3, "ERROR": 4}
+    level_color_codes = {
+        "DEBUG": "\033[94m",
+        "INFO": "\033[92m",
+        "WARNING": "\033[93m",
+        "ERROR": "\033[91m"
+    }
+    timestamp_color_code = "\033[96m"
+    reset_color_code = "\033[0m"
     if log_levels.get(level, 2) >= log_levels.get(LOG_LEVEL, 2):
-        datetime_color_code = "\033[96m"
-        level_color_codes = {"DEBUG": "\033[94m", "INFO": "\033[92m", "WARNING": "\033[93m", "ERROR": "\033[91m"}
-        reset_code = "\033[0m"
-        after_level_space = " " * (8 - len(level))
-        print(f"{datetime_color_code}[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {level_color_codes[level]}[{level}]{reset_code}{after_level_space}{msg}")
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        level_space = " " * (8 - len(level))
+        print(f"{timestamp_color_code}[{timestamp}] {level_color_codes[level]}[{level}]{reset_color_code}{level_space}{msg}")
 
 
 # Print debug log message

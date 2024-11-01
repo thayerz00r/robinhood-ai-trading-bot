@@ -21,11 +21,10 @@ def log(level, msg):
         level = "INFO"
     log_levels = {"DEBUG": 1, "INFO": 2, "WARNING": 3, "ERROR": 4}
     if log_levels.get(level, 2) >= log_levels.get(LOG_LEVEL, 2):
-        # cyan color
         datetime_color_code = "\033[96m"
         level_color_codes = {"DEBUG": "\033[94m", "INFO": "\033[92m", "WARNING": "\033[93m", "ERROR": "\033[91m"}
         reset_code = "\033[0m"
-        after_level_space = " " * (7 - len(level))
+        after_level_space = " " * (8 - len(level))
         print(f"{datetime_color_code}[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {level_color_codes[level]}[{level}]{reset_code}{after_level_space}{msg}")
 
 
@@ -454,9 +453,9 @@ def main():
                 run_interval_seconds = RUN_INTERVAL_SECONDS
                 log_info(f"Market is open, running trading bot in {MODE} mode...")
                 trading_results = trading_bot()
-                sold_stocks = [f"{result['symbol']}: ${result['amount']}" for result in trading_results.values() if result['decision'] == "sell" and result['result'] == "success"]
-                bought_stocks = [f"{result['symbol']}: ${result['amount']}" for result in trading_results.values() if result['decision'] == "buy" and result['result'] == "success"]
-                errors = [f"{result['symbol']}: {result['details']}" for result in trading_results.values() if result['result'] == "error"]
+                sold_stocks = [f"{result['symbol']} (${result['amount']})" for result in trading_results.values() if result['decision'] == "sell" and result['result'] == "success"]
+                bought_stocks = [f"{result['symbol']} (${result['amount']})" for result in trading_results.values() if result['decision'] == "buy" and result['result'] == "success"]
+                errors = [f"{result['symbol']} ({result['details']})" for result in trading_results.values() if result['result'] == "error"]
                 log_info(f"Sold stocks: {"None" if len(sold_stocks) == 0 else ', '.join(sold_stocks)}")
                 log_info(f"Bought stocks: {"None" if len(bought_stocks) == 0 else ', '.join(bought_stocks)}")
                 log_info(f"Errors: {"None" if len(errors) == 0 else ', '.join(errors)}")

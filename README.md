@@ -1,14 +1,7 @@
-![Jay and Silent Bob](images/jay_and_silent_bob.png)
-
-Fuck, fuck, fuck, motherfuck,<br />
-Rollin' stocks, makin' trades,<br />
-Time to cash in, watch those gains
-
-
 # 🤖 Robinhood AI Trading Bot
 ## ⚡ TL;DR
 Once you've added your OpenAI API Key and Robinhood credentials, and run this bot in "Auto" mode, it will analyze your portfolio stocks and some of your watchlist stocks (if available). 
-It calculates moving averages for these stocks, checks Robinhood analyst ratings (covering what "bulls" and "bears" say), feeds this data to OpenAI, and asks the AI to decide on actions for each stock (sell, buy, or hold, including quantities). 
+It calculates moving averages for these stocks, checks Robinhood analyst ratings (covering what "bulls" and "bears" say), feeds this data to OpenAI, and asks the AI to decide on actions for each stock (sell, buy, or hold, including amount). 
 It then directly executes all AI-made decisions.
 
 So be smart — don’t run this bot in "Auto" mode right after your first test. 
@@ -70,63 +63,69 @@ The bot leverages OpenAI to make data-driven trading decisions based on the stoc
 
 Decision-making AI-prompt example:  
 ```
-Analyze the stock portfolio and watchlist to make investment decisions. Suggest which stocks to sell first from the portfolio to increase buying power, and then determine if any stock from either the portfolio or the watchlist is worth buying. Return sell decisions in the order they should be executed to maximize buying power, and then provide buy decisions based on the resulting buying power.
+You are an investment advisor managing a stock portfolio and watchlist. Analyze both and suggest which stocks to sell first to maximize buying power and profit potential, followed by any potential buy opportunities that align with available funds and market conditions. Only respond in JSON format.
 
-Portfolio overview:
+Portfolio:
 {
- "AAPL": {
-  "price": "232.640000",
-  "quantity": "0.00857400",
-  "average_buy_price": "233.2901",
-  "equity": "1.99",
-  "percent_change": "-0.28",
-  "intraday_percent_change": "0.00",
-  "equity_change": "-0.005574",
-  "pe_ratio": "35.536500",
-  "percentage": "0.24",
-  "50_day_mavg": 227.1,
-  "200_day_mavg": 201.54,
-  "analyst_rating_sell_text": "Regulators have a keen eye on Apple, and recent regulations have chipped away at parts of Apple\u2019s sticky ecosystem. ",
-  "analyst_rating_buy_text": "Apple has a stellar balance sheet and sends great amounts of cash flow back to shareholders.",
-  "analyst_rating_summary": "Buy: 66%, Sell: 6%, Hold: 28%"
+ "NVDA": {
+  "price": 136.13,
+  "quantity": 0.004276,
+  "average_buy_price": 141.65,
+  "50_day_mavg_price": 125.22,
+  "200_day_mavg_price": 104.33,
+  "robinhood_analyst_sell_opinion": "Nvidia\u2019s gaming GPU business has often seen boom-or-bust cycles based on PC demand and, more recently, cryptocurrency mining.",
+  "robinhood_analyst_buy_opinion": "The firm has a first-mover advantage in the autonomous driving market that could lead to widespread adoption of its Drive PX self-driving platform.",
+  "robinhood_analyst_summary_distribution": "sell: 0%, buy: 92%, hold: 8%"
+ },
+ "MSFT": {
+  "price": 414.13,
+  "quantity": 0.000399,
+  "average_buy_price": 410.07,
+  "50_day_mavg_price": 420.79,
+  "200_day_mavg_price": 420.75,
+  "robinhood_analyst_sell_opinion": "Microsoft is not the top player in its key sources of growth, notably Azure and Dynamics.",
+  "robinhood_analyst_buy_opinion": "Microsoft has monopoly like positions in various areas (OS, Office) that serve as cash cows to help drive Azure growth.",
+  "robinhood_analyst_summary_distribution": "sell: 2%, buy: 91%, hold: 7%"
  },
  ...
 }
 
-Watchlist overview:
+Watchlist:
 {
- "BL": {
-  "price": 57.33,
-  "50_day_mavg": 52.82,
-  "200_day_mavg": 54.9,
-  "analyst_rating_sell_text": "Despite a nearly 20-year history, BlackLine has yet to turn a GAAP profit, and it will be several more years before it can become profitable.",
-  "analyst_rating_buy_text": "BlackLine\u2019s new partnership with SAP provides BlackLine with a foothold in Europe and the opportunity to add some of the largest enterprises in the world to its client roster.",
-  "analyst_rating_summary": "Buy: 27%, Sell: 20%, Hold: 53%"
+ "VRT": {
+  "price": 108.72,
+  "50_day_mavg_price": 96.23,
+  "200_day_mavg_price": 84.28,
+  "robinhood_analyst_summary_distribution": "sell: 0%, buy: 100%, hold: 0%"
+ },
+ "BB": {
+  "price": 2.3,
+  "50_day_mavg_price": 2.42,
+  "200_day_mavg_price": 2.63,
+  "robinhood_analyst_sell_opinion": "BlackBerry has yet to prove its ability to grow organically as a software company.",
+  "robinhood_analyst_buy_opinion": "BlackBerry IVY\u2014the result of a partnership with Amazon Web Services\u2014could create a revolutionary software ecosystem for connected vehicles, allowing OEMs to process, analyze, and monetize massive amounts of vehicle data. ",
+  "robinhood_analyst_summary_distribution": "sell: 0%, buy: 44%, hold: 56%"
  },
  ...
 }
 
-Total buying power: $0.09.
+Total buying power (USD): 2.09
 
-Guidelines for buy/sell amounts:
-- Min sell: $1.0
-- Max sell: $150.0
-- Min buy: $1.0
-- Max buy: $150.0
+Sell amounts guidelines (USD): Min: 1.0, Max: 300.0
+Buy amounts guidelines (USD): Min: 1.0, Max: 300.0
 
-Provide a JSON response in this format:
+Response format:
 [{"symbol": "<symbol>", "decision": "<decision>", "amount": <amount>}, ...]
 Decision options: buy, sell, hold
-Amount is the suggested amount to buy or sell in $
-Return only the JSON array, without explanation or extra text. If no decisions are made, return an empty array.
+Amount represents the recommended buy or sell amount in USD. Return only the JSON array; no explanations. If no decisions are necessary, return an empty array.
 ```
 
 AI-response example:
 ```
 [
     {"symbol": "AAPL", "decision": "sell", "amount": 1.0},
-    {"symbol": "EQIX", "decision": "buy", "amount": 1.0},
     {"symbol": "BL", "decision": "hold", "amount": 0.0},
+    {"symbol": "EQIX", "decision": "buy", "amount": 1.0},
     ...
 ]
 ```
@@ -139,55 +138,39 @@ The bot adjusts its trading decisions based on the outcomes of executed trades:
 
 Post-decision adjustments AI-prompt example:  
 ```
-Analyze the trading results based on your previous decisions. Make adjustments if needed. Return sell decisions in the order they should be executed to maximize buying power, and then provide buy decisions based on the resulting buying power.
+You are an investment advisor responsible for reviewing and adjusting prior trading decisions. Analyze the provided trading results to ensure they maximize buying power and profit potential. Reorder sell decisions as needed to optimize buying power, then provide buy recommendations based on the updated buying power. Only respond in JSON format.
 
 Trading results:
 {
- "AAPL": {
-  "symbol": "AAPL",
-  "amount": 2.5,
+ "NVDA": {
+  "symbol": "NVDA",
+  "amount": 1.0,
   "decision": "sell",
   "result": "error",
-  "details": {
-   "detail": "Not enough shares to sell."
-  }
+  "details": "Not enough shares to sell."
  },
- "BLIN": {
-  "symbol": "BLIN",
-  "amount": 1.5,
-  "decision": "buy",
-  "result": "error",
-  "details": {
-   "detail": "You cannot open new fractional positions on this stock."
-  }
- },
- "BCOV": {
-  "symbol": "BCOV",
-  "amount": 1.5,
+ "VRT": {
+  "symbol": "VRT",
+  "amount": 2.09,
   "decision": "buy",
   "result": "success",
   "details": {
-   "quantity": 0.672646,
-   "price": 2.24,
-   "fees": 0.0
+   "quantity": 0.0192,
+   "price": 108.76
   }
  },
  ...
 }
 
-Total buying power: $1.01.
+Total buying power (USD): 0.0
 
-Guidelines for buy/sell amounts:
-- Min sell: $1.5
-- Max sell: $150.0
-- Min buy: $1.5
-- Max buy: $150.0
+Sell amounts guidelines (USD): Min: 1.0, Max: 300.0
+Buy amounts guidelines (USD): Min: 1.0, Max: 300.0
 
-Provide a JSON response in this format:
+Response format:
 [{"symbol": "<symbol>", "decision": "<decision>", "amount": <amount>}, ...]
 Decision options: buy, sell, hold
-Amount is the suggested amount to buy or sell in $
-Return only the JSON array, without explanation or extra text. If no decisions are made, return an empty array.
+Amount represents the recommended buy or sell amount in USD. Return only the JSON array; no explanations. If no adjustments are necessary, return an empty array.
 ```
 
 AI-response example:
@@ -203,29 +186,29 @@ AI-response example:
 The bot logs its activity and trading decisions in a console log.
 Log example:
 ```
-[2024-10-30 09:18:43.137340]  Market XNYS is open, running trading bot in auto mode...
-[2024-10-30 09:18:43.137340]  Getting my stocks to proceed...
-[2024-10-30 09:18:48.443992]  Total stocks in portfolio: 40
-[2024-10-30 09:18:48.443992]  Prepare portfolio overview for AI analysis...
-[2024-10-30 09:20:09.036619]  Getting watchlist stocks to proceed...
-[2024-10-30 09:20:11.000888]  Total watchlist stocks: 598
-[2024-10-30 09:20:11.001893]  Limiting watchlist stocks to overview limit of 10 (random selection)...
-[2024-10-30 09:20:11.001893]  Prepare watchlist overview for AI analysis...
-[2024-10-30 09:20:31.406655]  Making AI-based decision...
-[2024-10-30 09:20:34.720835]  Total decisions: 4
-[2024-10-30 09:20:34.720835]  Executing decisions...
-[2024-10-30 09:20:34.720835]  AAPL > Decision: sell with amount $1.0
-[2024-10-30 09:20:38.279698]  AAPL > Sold $1.0 worth of stock
-[2024-10-30 09:20:38.279698]  NVDA > Decision: sell with amount $1.0
-[2024-10-30 09:20:40.742978]  NVDA > Sold $1.0 worth of stock
-[2024-10-30 09:20:40.742978]  ZM > Decision: sell with amount $1.0
-[2024-10-30 09:20:44.033484]  ZM > Sold $1.0 worth of stock
-[2024-10-30 09:20:44.033484]  DUOT > Decision: buy with amount $1.0
-[2024-10-30 09:20:45.941911]  DUOT > Error buying: {'detail': 'You can only purchase 0 shares of DUOT.'}
-[2024-10-30 09:20:45.941911]  Making AI-based post-decision analysis...
-[2024-10-30 09:20:47.487805]  Total post-decision adjustments: 0
-[2024-10-30 09:20:47.487805]  Total sold: $3.0, Total bought: $0
-[2024-10-30 09:20:47.487805]  Waiting for 600 seconds...
+Are you sure you want to run the bot in auto mode? (yes/no): yes
+[2024-11-01 11:06:58] [INFO]    Market is open, running trading bot in auto mode...
+[2024-11-01 11:06:58] [INFO]    Getting portfolio stocks...
+[2024-11-01 11:07:02] [INFO]    Portfolio stocks to proceed: NVDA (1.07%), MSFT (0.12%), SNAP (0.25%), NWSA (13.71%), ...
+[2024-11-01 11:07:02] [INFO]    Prepare portfolio stocks for AI analysis...
+[2024-11-01 11:07:07] [INFO]    Getting watchlist stocks...
+[2024-11-01 11:07:08] [INFO]    Watchlist stocks to proceed: VRT, BB, VRNT, PBI, BMBL, IESC, WB, LITE, ...
+[2024-11-01 11:07:08] [INFO]    Prepare watchlist overview for AI analysis...
+[2024-11-01 11:07:09] [INFO]    Making AI-based decision...
+[2024-11-01 11:07:21] [INFO]    Executing decisions...
+[2024-11-01 11:07:21] [INFO]    NVDA > Decision: sell with amount $2.0
+[2024-11-01 11:07:21] [ERROR]   NVDA > Sold $2.0 worth of stock
+[2024-11-01 11:07:21] [INFO]    MSFT > Decision: sell with amount $1.0
+[2024-11-01 11:07:21] [ERROR]   MSFT > Error selling: Not enough shares to sell.
+[2024-11-01 11:07:22] [INFO]    VRT > Decision: buy with amount $2.09
+[2024-11-01 11:07:23] [INFO]    VRT > Bought $2.09 worth of stock
+[2024-11-01 11:07:23] [INFO]    SNAP > Decision: hold with amount $0.0
+[2024-11-01 11:07:23] [INFO]    VIAV > Decision: hold with amount $0.0
+[2024-11-01 11:07:23] [INFO]    Making AI-based post-decision analysis, attempt: 1/2...
+[2024-11-01 11:07:24] [INFO]    Stocks sold: NVDA ($2.0)
+[2024-11-01 11:07:24] [INFO]    Stocks bought: VRT ($2.09)
+[2024-11-01 11:07:24] [INFO]    Errors: MSFT (Not enough shares to sell.)
+[2024-11-01 11:07:24] [INFO]    Waiting for 600 seconds...
 ```
 
 
@@ -258,14 +241,12 @@ ROBINHOOD_PASSWORD = "..."                  # Robinhood password
 
 # Basic config parameters
 MODE = "demo"                               # Trading mode (demo, auto, manual)
+LOG_LEVEL = "INFO"                          # Log level (DEBUG, INFO)
 RUN_INTERVAL_SECONDS = 600                  # Trading interval in seconds (if the market is open)
 
 # Robinhood config parameters
-MARKET_MIC = "XNYS"                         # Market MIC for open hours check (e.g. XNYS, XNAS)
 WATCHLIST_NAMES = []                        # Watchlist names (can be empty, or "My First List", "My Second List", etc.)
 WATCHLIST_OVERVIEW_LIMIT = 10               # Number of stocks to process in decision-making (e.g. 20)
-MIN_API_CALL_PAUSE_SECONDS = 0.5            # Minimum pause between Robinhood API calls in seconds (to avoid rate limits)
-MAX_API_CALL_PAUSE_SECONDS = 1.5            # Maximum pause between Robinhood API calls in seconds (to avoid rate limits)
 
 # OpenAI config params
 MAX_POST_DECISIONS_ADJUSTMENTS = 1          # Maximum number of adjustments to make (0 - disable adjustments)

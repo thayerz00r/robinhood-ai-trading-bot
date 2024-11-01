@@ -52,7 +52,7 @@ def log_error(msg):
     log("ERROR", msg)
 
 
-# Run a Robinhood function with retries and delay between attempts
+# Run a Robinhood function with retries and delay between attempts (to handle rate limits)
 def rh_run_with_retries(func, *args, max_retries=3, delay=60, **kwargs):
     for attempt in range(max_retries):
         result = func(*args, **kwargs)
@@ -456,13 +456,27 @@ def main():
             if is_market_open():
                 run_interval_seconds = RUN_INTERVAL_SECONDS
                 log_info(f"Market is open, running trading bot in {MODE} mode...")
+
                 trading_results = trading_bot()
+
                 sold_stocks = [f"{result['symbol']} (${result['amount']})" for result in trading_results.values() if result['decision'] == "sell" and result['result'] == "success"]
                 bought_stocks = [f"{result['symbol']} (${result['amount']})" for result in trading_results.values() if result['decision'] == "buy" and result['result'] == "success"]
                 errors = [f"{result['symbol']} ({result['details']})" for result in trading_results.values() if result['result'] == "error"]
                 log_info(f"Sold stocks: {"None" if len(sold_stocks) == 0 else ', '.join(sold_stocks)}")
                 log_info(f"Bought stocks: {"None" if len(bought_stocks) == 0 else ', '.join(bought_stocks)}")
                 log_info(f"Errors: {"None" if len(errors) == 0 else ', '.join(errors)}")
+
+                log_info("Getting portfolio and buying power...")
+                my_stocks = get_my_stocks()
+                my_stocks_value = 0
+                for stock in my_stocks.values():
+                    my_stocks_value += float(stock['price']) * float(stock['quantity'])
+                portfolio = [f"{symbol} ({round(float(stock['price']) * float(stock['quantity']) / my_stocks_value * 100, 2)}%)" for symbol, stock in my_stocks.items()]
+                buy_power = get_buying_power()
+
+                log_info(f"Portfolio: {"None" if len(portfolio) == 0 else ', '.join(portfolio)}")
+                log_info(f"Portfolio value: ${round_money(my_stocks_value)}")
+                log_info(f"Buying power: ${buy_power}")
             else:
                 run_interval_seconds = 60
                 log_info("Market is closed, waiting for next run...")

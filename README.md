@@ -1,4 +1,7 @@
-# 🤖 Robinhood AI Trading Bot
+<img src="images/avatar.png" width="277" alt="Robinhood AI Trading Bot"/>
+
+
+# Robinhood AI Trading Bot
 ## ⚡ TL;DR
 Once you've added your OpenAI API Key and Robinhood credentials, and run this bot in "Auto" mode, it will analyze your portfolio stocks and some of your watchlist stocks (if available). 
 It calculates moving averages for these stocks, checks Robinhood analyst ratings (covering what "bulls" and "bears" say), feeds this data to OpenAI, and asks the AI to decide on actions for each stock (sell, buy, or hold, including amount). 

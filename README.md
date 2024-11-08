@@ -120,6 +120,8 @@ Total buying power (USD): 2.09
 Sell amounts guidelines (USD): Min: 1.0, Max: 300.0
 Buy amounts guidelines (USD): Min: 1.0, Max: 300.0
 
+Try to keep the portfolio size under 10 stocks.
+
 Response format:
 [{"symbol": "<symbol>", "decision": "<decision>", "amount": <amount>}, ...]
 Decision options: buy, sell, hold
@@ -176,6 +178,8 @@ Total buying power (USD): 0.0
 
 Sell amounts guidelines (USD): Min: 1.0, Max: 300.0
 Buy amounts guidelines (USD): Min: 1.0, Max: 300.0
+
+Try to keep the portfolio size under 10 stocks.
 
 Response format:
 [{"symbol": "<symbol>", "decision": "<decision>", "amount": <amount>}, ...]
@@ -257,6 +261,7 @@ RUN_INTERVAL_SECONDS = 600                  # Trading interval in seconds (if th
 # Robinhood config parameters
 WATCHLIST_NAMES = []                        # Watchlist names (can be empty, or "My First List", "My Second List", etc.)
 WATCHLIST_OVERVIEW_LIMIT = 10               # Number of stocks to process in decision-making (e.g. 20)
+PORTFOLIO_LIMIT = 10                        # Number of stocks to hold in the portfolio
 
 # OpenAI config params
 MAX_POST_DECISIONS_ADJUSTMENTS = 1          # Maximum number of adjustments to make (0 - disable adjustments)

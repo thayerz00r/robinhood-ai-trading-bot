@@ -267,6 +267,7 @@ def make_ai_decisions(buying_power, portfolio_overview, watchlist_overview):
         f"Total buying power (USD): {buying_power}\n\n"
         f"Sell amounts guidelines (USD): Min: {MIN_SELLING_AMOUNT_USD}, Max: {MAX_SELLING_AMOUNT_USD}\n"
         f"Buy amounts guidelines (USD): Min: {MIN_BUYING_AMOUNT_USD}, Max: {MAX_BUYING_AMOUNT_USD}\n\n"
+        f"Try to keep the portfolio size under {PORTFOLIO_LIMIT} stocks.\n\n"
         "Response format:\n"
         '[{"symbol": "<symbol>", "decision": "<decision>", "amount": <amount>}, ...]\n'
         "Decision options: buy, sell, hold\n"
@@ -292,6 +293,7 @@ def make_ai_post_decisions_adjustment(buying_power, trading_results):
         f"Total buying power (USD): {buying_power}\n\n"
         f"Sell amounts guidelines (USD): Min: {MIN_SELLING_AMOUNT_USD}, Max: {MAX_SELLING_AMOUNT_USD}\n"
         f"Buy amounts guidelines (USD): Min: {MIN_BUYING_AMOUNT_USD}, Max: {MAX_BUYING_AMOUNT_USD}\n\n"
+        f"Try to keep the portfolio size under {PORTFOLIO_LIMIT} stocks.\n\n"
         "Response format:\n"
         '[{"symbol": "<symbol>", "decision": "<decision>", "amount": <amount>}, ...]\n'
         "Decision options: buy, sell, hold\n"

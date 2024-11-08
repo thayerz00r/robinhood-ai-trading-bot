@@ -65,68 +65,87 @@ The bot leverages OpenAI to make data-driven trading decisions based on the stoc
 2. **Output Data**: OpenAI provides trading decisions (sell, buy, or hold) for each stock.
 
 Decision-making AI-prompt example:  
-```
-You are an investment advisor managing a stock portfolio and watchlist. 
-You analyze the market conditions every 600 seconds.
-Analyze both and suggest which stocks to sell first to maximize buying power and profit potential, followed by any potential buy opportunities that align with available funds and market conditions. 
-Only respond in JSON format.
+``````
+**Decision-Making AI Prompt:**
 
-Portfolio:
+**Context:**
+You are an investment advisor managing a stock portfolio and watchlist. Every 600 seconds, you analyze market conditions to make informed investment decisions.
+
+**Task:**
+Analyze the provided portfolio and watchlist data to recommend:
+1. Stocks to sell, prioritizing those that maximize buying power and profit potential.
+2. Stocks to buy that align with available funds and current market conditions.
+
+**Constraints:**
+- Maintain a portfolio size of fewer than 10 stocks.
+- Total Buying Power: 3.96 USD initially.
+- Sell Amounts Guidelines: Minimum 1.0 USD, Maximum 300.0 USD
+- Buy Amounts Guidelines: Minimum 1.0 USD, Maximum 300.0 USD
+
+**Portfolio Overview:**
+```json
 {
+ "AAPL": {
+  "price": 227.59,
+  "quantity": 0.564172,
+  "average_buy_price": 226.93,
+  "50_day_mavg_price": 226.88,
+  "200_day_mavg_price": 202.76,
+  "robinhood_analyst_sell_opinion": "Regulators have a keen eye on Apple, and recent regulations have chipped away at parts of Apple\u2019s sticky ecosystem. ",
+  "robinhood_analyst_buy_opinion": "Apple has a stellar balance sheet and sends great amounts of cash flow back to shareholders.",
+  "robinhood_analyst_summary_distribution": "sell: 6%, buy: 67%, hold: 27%"
+ },
  "NVDA": {
-  "price": 136.13,
-  "quantity": 0.004276,
-  "average_buy_price": 141.65,
-  "50_day_mavg_price": 125.22,
-  "200_day_mavg_price": 104.33,
+  "price": 147.13,
+  "quantity": 0.000302,
+  "average_buy_price": 147.19,
+  "50_day_mavg_price": 126.67,
+  "200_day_mavg_price": 106.37,
   "robinhood_analyst_sell_opinion": "Nvidia\u2019s gaming GPU business has often seen boom-or-bust cycles based on PC demand and, more recently, cryptocurrency mining.",
   "robinhood_analyst_buy_opinion": "The firm has a first-mover advantage in the autonomous driving market that could lead to widespread adoption of its Drive PX self-driving platform.",
   "robinhood_analyst_summary_distribution": "sell: 0%, buy: 92%, hold: 8%"
  },
- "MSFT": {
-  "price": 414.13,
-  "quantity": 0.000399,
-  "average_buy_price": 410.07,
-  "50_day_mavg_price": 420.79,
-  "200_day_mavg_price": 420.75,
-  "robinhood_analyst_sell_opinion": "Microsoft is not the top player in its key sources of growth, notably Azure and Dynamics.",
-  "robinhood_analyst_buy_opinion": "Microsoft has monopoly like positions in various areas (OS, Office) that serve as cash cows to help drive Azure growth.",
-  "robinhood_analyst_summary_distribution": "sell: 2%, buy: 91%, hold: 7%"
- },
  ...
 }
-
-Watchlist:
-{
- "VRT": {
-  "price": 108.72,
-  "50_day_mavg_price": 96.23,
-  "200_day_mavg_price": 84.28,
-  "robinhood_analyst_summary_distribution": "sell: 0%, buy: 100%, hold: 0%"
- },
- "BB": {
-  "price": 2.3,
-  "50_day_mavg_price": 2.42,
-  "200_day_mavg_price": 2.63,
-  "robinhood_analyst_sell_opinion": "BlackBerry has yet to prove its ability to grow organically as a software company.",
-  "robinhood_analyst_buy_opinion": "BlackBerry IVY\u2014the result of a partnership with Amazon Web Services\u2014could create a revolutionary software ecosystem for connected vehicles, allowing OEMs to process, analyze, and monetize massive amounts of vehicle data. ",
-  "robinhood_analyst_summary_distribution": "sell: 0%, buy: 44%, hold: 56%"
- },
- ...
-}
-
-Total buying power (USD): 2.09
-
-Sell amounts guidelines (USD): Min: 1.0, Max: 300.0
-Buy amounts guidelines (USD): Min: 1.0, Max: 300.0
-
-Try to keep the portfolio size under 10 stocks.
-
-Response format:
-[{"symbol": "<symbol>", "decision": "<decision>", "amount": <amount>}, ...]
-Decision options: buy, sell, hold
-Amount represents the recommended buy or sell amount in USD. Return only the JSON array; no explanations. If no decisions are necessary, return an empty array.
 ```
+
+**Watchlist Overview:**
+```json
+{
+ "TCEHY": {
+  "price": 53.05,
+  "50_day_mavg_price": 52.99,
+  "200_day_mavg_price": 45.76,
+  "robinhood_analyst_sell_opinion": "The possibility of highly competitive foreign internet service providers reentering China over the next 10-20 years.",
+  "robinhood_analyst_buy_opinion": "Compliance costs can rise to a point where they become significant barriers to entry to the Chinese internet industry.",
+  "robinhood_analyst_summary_distribution": "sell: 3%, buy: 95%, hold: 2%"
+ },
+ "NSSC": {
+  "price": 39.1,
+  "50_day_mavg_price": 39.5,
+  "200_day_mavg_price": 44.88,
+  "robinhood_analyst_summary_distribution": "sell: 0%, buy: 83%, hold: 17%"
+ },
+ ...
+}
+```
+
+**Response Format:**
+Return your decisions in a JSON array with this structure:
+```json
+[
+  {"symbol": "<symbol>", "decision": "<decision>", "amount": <amount>},
+  ...
+]
+```
+- `symbol`: Stock ticker symbol.
+- `decision`: One of `buy`, `sell`, or `hold`.
+- `amount`: Recommended transaction amount in USD.
+
+**Instructions:**
+- Provide only the JSON output with no additional text.
+- Return an empty array if no actions are necessary.
+``````
 
 AI-response example:
 ```
@@ -145,15 +164,36 @@ The bot adjusts its trading decisions based on the outcomes of executed trades:
 2. **Output Data**: OpenAI provides adjustments to the trading decisions based on the trading results.
 
 Post-decision adjustments AI-prompt example:  
-```
-You are an investment advisor responsible for reviewing and adjusting prior trading decisions. 
-You analyze the market conditions every 600 seconds.
-Analyze the provided trading results to ensure they maximize buying power and profit potential. 
-Reorder sell decisions as needed to optimize buying power, then provide buy recommendations based on the updated buying power. 
-Only respond in JSON format.
+``````
+**Post-Decision Adjustments AI Prompt:**
 
-Trading results:
+**Context:**
+You are an investment advisor tasked with reviewing and adjusting prior trading decisions. Your goal is to optimize buying power and profit potential by analyzing trading results and making necessary changes.
+
+**Task:**
+1. Review previous trading outcomes and resolve any errors.
+2. Reorder and adjust sell decisions to enhance buying power.
+3. Update buy recommendations based on the newly available buying power.
+
+**Constraints:**
+- Maintain a portfolio size of fewer than 10 stocks.
+- Total Buying Power: 2.95 USD initially.
+- Sell Amounts Guidelines: Minimum 1.0 USD, Maximum 300.0 USD
+- Buy Amounts Guidelines: Minimum 1.0 USD, Maximum 300.0 USD
+
+**Trading Results:**
+```json
 {
+ "AAPL": {
+  "symbol": "AAPL",
+  "amount": 1.0,
+  "decision": "sell",
+  "result": "success",
+  "details": {
+   "quantity": 0.004394,
+   "price": null
+  }
+ },
  "NVDA": {
   "symbol": "NVDA",
   "amount": 1.0,
@@ -161,31 +201,26 @@ Trading results:
   "result": "error",
   "details": "Not enough shares to sell."
  },
- "VRT": {
-  "symbol": "VRT",
-  "amount": 2.09,
-  "decision": "buy",
-  "result": "success",
-  "details": {
-   "quantity": 0.0192,
-   "price": 108.76
-  }
- },
  ...
 }
-
-Total buying power (USD): 0.0
-
-Sell amounts guidelines (USD): Min: 1.0, Max: 300.0
-Buy amounts guidelines (USD): Min: 1.0, Max: 300.0
-
-Try to keep the portfolio size under 10 stocks.
-
-Response format:
-[{"symbol": "<symbol>", "decision": "<decision>", "amount": <amount>}, ...]
-Decision options: buy, sell, hold
-Amount represents the recommended buy or sell amount in USD. Return only the JSON array; no explanations. If no adjustments are necessary, return an empty array.
 ```
+
+**Response Format:**
+Return your decisions in a JSON array with this structure:
+```json
+[
+  {"symbol": "<symbol>", "decision": "<decision>", "amount": <amount>},
+  ...
+]
+```
+- `symbol`: Stock ticker symbol.
+- `decision`: One of `buy`, `sell`, or `hold`.
+- `amount`: Recommended transaction amount in USD.
+
+**Instructions:**
+- Provide only the JSON output with no additional text.
+- Return an empty array if no actions are necessary.
+``````
 
 AI-response example:
 ```

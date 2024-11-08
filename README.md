@@ -66,7 +66,10 @@ The bot leverages OpenAI to make data-driven trading decisions based on the stoc
 
 Decision-making AI-prompt example:  
 ```
-You are an investment advisor managing a stock portfolio and watchlist. Analyze both and suggest which stocks to sell first to maximize buying power and profit potential, followed by any potential buy opportunities that align with available funds and market conditions. Only respond in JSON format.
+You are an investment advisor managing a stock portfolio and watchlist. 
+You analyze the market conditions every 600 seconds.
+Analyze both and suggest which stocks to sell first to maximize buying power and profit potential, followed by any potential buy opportunities that align with available funds and market conditions. 
+Only respond in JSON format.
 
 Portfolio:
 {
@@ -141,7 +144,11 @@ The bot adjusts its trading decisions based on the outcomes of executed trades:
 
 Post-decision adjustments AI-prompt example:  
 ```
-You are an investment advisor responsible for reviewing and adjusting prior trading decisions. Analyze the provided trading results to ensure they maximize buying power and profit potential. Reorder sell decisions as needed to optimize buying power, then provide buy recommendations based on the updated buying power. Only respond in JSON format.
+You are an investment advisor responsible for reviewing and adjusting prior trading decisions. 
+You analyze the market conditions every 600 seconds.
+Analyze the provided trading results to ensure they maximize buying power and profit potential. 
+Reorder sell decisions as needed to optimize buying power, then provide buy recommendations based on the updated buying power. 
+Only respond in JSON format.
 
 Trading results:
 {

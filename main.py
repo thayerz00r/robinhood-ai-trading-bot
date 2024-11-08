@@ -258,6 +258,7 @@ def parse_ai_response(ai_response):
 def make_ai_decisions(buying_power, portfolio_overview, watchlist_overview):
     ai_prompt = (
         "You are an investment advisor managing a stock portfolio and watchlist. "
+        f"You analyze the market conditions every {RUN_INTERVAL_SECONDS} seconds. "
         "Analyze both and suggest which stocks to sell first to maximize buying power and profit potential, "
         "followed by any potential buy opportunities that align with available funds and market conditions. "
         "Only respond in JSON format.\n\n"
@@ -283,6 +284,7 @@ def make_ai_decisions(buying_power, portfolio_overview, watchlist_overview):
 def make_ai_post_decisions_adjustment(buying_power, trading_results):
     ai_prompt = (
         "You are an investment advisor responsible for reviewing and adjusting prior trading decisions. "
+        f"You analyze the market conditions every {RUN_INTERVAL_SECONDS} seconds. "
         "Analyze the provided trading results to ensure they maximize buying power and profit potential. "
         "Reorder sell decisions as needed to optimize buying power, then provide buy recommendations based on the updated buying power. "
         "Only respond in JSON format.\n\n"

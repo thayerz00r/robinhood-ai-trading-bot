@@ -14,8 +14,8 @@ WATCHLIST_OVERVIEW_LIMIT = 10               # Number of stocks to process in dec
 PORTFOLIO_LIMIT = 10                        # Number of stocks to hold in the portfolio
 
 # OpenAI config params
-MAX_POST_DECISIONS_ADJUSTMENTS = False      # Maximum number of adjustments to make (False - disable adjustments)
 OPENAI_MODEL_NAME = "gpt-4o-mini"           # OpenAI model name
+MAX_POST_DECISIONS_ADJUSTMENTS = False      # Maximum number of adjustments to make (False - disable adjustments)
 
 # Trading parameters
 MIN_SELLING_AMOUNT_USD = 1.0                # Minimum sell amount in USD (False - disable setting)

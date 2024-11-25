@@ -134,13 +134,13 @@ Analyze the provided portfolio and watchlist data to recommend:
 Return your decisions in a JSON array with this structure:
 ```json
 [
-  {"symbol": "<symbol>", "decision": "<decision>", "amount": <amount>},
+  {"symbol": "<symbol>", "decision": "<decision>", "quantity": <quantity>},
   ...
 ]
 ```
 - `symbol`: Stock ticker symbol.
 - `decision`: One of `buy`, `sell`, or `hold`.
-- `amount`: Recommended transaction amount in USD.
+- `quantity`: Recommended transaction quantity.
 
 **Instructions:**
 - Provide only the JSON output with no additional text.
@@ -150,9 +150,9 @@ Return your decisions in a JSON array with this structure:
 AI-response example:
 ```
 [
-    {"symbol": "AAPL", "decision": "sell", "amount": 1.0},
-    {"symbol": "BL", "decision": "hold", "amount": 0.0},
-    {"symbol": "EQIX", "decision": "buy", "amount": 1.0},
+    {"symbol": "AAPL", "decision": "sell", "quantity": 0.564172},
+    {"symbol": "BL", "decision": "hold", "quantity": 0.0},
+    {"symbol": "EQIX", "decision": "buy", "quantity": 1.0},
     ...
 ]
 ```
@@ -209,13 +209,13 @@ You are an investment advisor tasked with reviewing and adjusting prior trading 
 Return your decisions in a JSON array with this structure:
 ```json
 [
-  {"symbol": "<symbol>", "decision": "<decision>", "amount": <amount>},
+  {"symbol": "<symbol>", "decision": "<decision>", "quantity": <quantity>},
   ...
 ]
 ```
 - `symbol`: Stock ticker symbol.
 - `decision`: One of `buy`, `sell`, or `hold`.
-- `amount`: Recommended transaction amount in USD.
+- `quantity`: Recommended transaction quantity.
 
 **Instructions:**
 - Provide only the JSON output with no additional text.
@@ -225,7 +225,7 @@ Return your decisions in a JSON array with this structure:
 AI-response example:
 ```
 [
-    {"symbol": "AAPL", "decision": "sell", "amount": 1.5},
+    {"symbol": "AAPL", "decision": "sell", "quantity": 0.004394},
     ...
 ]
 ```
@@ -245,17 +245,17 @@ Are you sure you want to run the bot in auto mode? (yes/no): yes
 [2024-11-01 11:07:08] [INFO]    Prepare watchlist overview for AI analysis...
 [2024-11-01 11:07:09] [INFO]    Making AI-based decision...
 [2024-11-01 11:07:21] [INFO]    Executing decisions...
-[2024-11-01 11:07:21] [INFO]    NVDA > Decision: sell with amount $2.0
-[2024-11-01 11:07:21] [ERROR]   NVDA > Sold $2.0 worth of stock
-[2024-11-01 11:07:21] [INFO]    MSFT > Decision: sell with amount $1.0
+[2024-11-01 11:07:21] [INFO]    NVDA > Decision: sell of 2.012
+[2024-11-01 11:07:21] [ERROR]   NVDA > Sold 2.012 stocks
+[2024-11-01 11:07:21] [INFO]    MSFT > Decision: sell of 1.5422
 [2024-11-01 11:07:21] [ERROR]   MSFT > Error selling: Not enough shares to sell.
-[2024-11-01 11:07:22] [INFO]    VRT > Decision: buy with amount $2.09
-[2024-11-01 11:07:23] [INFO]    VRT > Bought $2.09 worth of stock
-[2024-11-01 11:07:23] [INFO]    SNAP > Decision: hold with amount $0.0
-[2024-11-01 11:07:23] [INFO]    VIAV > Decision: hold with amount $0.0
+[2024-11-01 11:07:22] [INFO]    VRT > Decision: buy of 2.09
+[2024-11-01 11:07:23] [INFO]    VRT > Bought 2.09 stocks
+[2024-11-01 11:07:23] [INFO]    SNAP > Decision: hold of 0.0323
+[2024-11-01 11:07:23] [INFO]    VIAV > Decision: hold of 0.0212
 [2024-11-01 11:07:23] [INFO]    Making AI-based post-decision analysis, attempt: 1/2...
-[2024-11-01 11:07:24] [INFO]    Stocks sold: NVDA ($2.0)
-[2024-11-01 11:07:24] [INFO]    Stocks bought: VRT ($2.09)
+[2024-11-01 11:07:24] [INFO]    Stocks sold: NVDA (2.0)
+[2024-11-01 11:07:24] [INFO]    Stocks bought: VRT (2.09)
 [2024-11-01 11:07:24] [INFO]    Errors: MSFT (Not enough shares to sell.)
 [2024-11-01 11:07:24] [INFO]    Waiting for 600 seconds...
 ```
@@ -299,8 +299,8 @@ WATCHLIST_OVERVIEW_LIMIT = 10               # Number of stocks to process in dec
 PORTFOLIO_LIMIT = 10                        # Number of stocks to hold in the portfolio
 
 # OpenAI config params
-MAX_POST_DECISIONS_ADJUSTMENTS = False      # Maximum number of adjustments to make (False - disable adjustments)
 OPENAI_MODEL_NAME = "gpt-4o-mini"           # OpenAI model name
+MAX_POST_DECISIONS_ADJUSTMENTS = False      # Maximum number of adjustments to make (False - disable adjustments)
 
 # Trading parameters
 MIN_SELLING_AMOUNT_USD = 1.0                # Minimum sell amount in USD (False - disable setting)

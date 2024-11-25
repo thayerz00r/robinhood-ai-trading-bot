@@ -510,8 +510,8 @@ def main():
                 sold_stocks = [f"{result['symbol']} ({result['quantity']})" for result in trading_results.values() if result['decision'] == "sell" and result['result'] == "success"]
                 bought_stocks = [f"{result['symbol']} ({result['quantity']})" for result in trading_results.values() if result['decision'] == "buy" and result['result'] == "success"]
                 errors = [f"{result['symbol']} ({result['details']})" for result in trading_results.values() if result['result'] == "error"]
-                log_info(f"Stocks sold: {"None" if len(sold_stocks) == 0 else ', '.join(sold_stocks)}")
-                log_info(f"Stocks bought: {"None" if len(bought_stocks) == 0 else ', '.join(bought_stocks)}")
+                log_info(f"Sold: {"None" if len(sold_stocks) == 0 else ', '.join(sold_stocks)}")
+                log_info(f"Bought: {"None" if len(bought_stocks) == 0 else ', '.join(bought_stocks)}")
                 log_info(f"Errors: {"None" if len(errors) == 0 else ', '.join(errors)}")
             else:
                 run_interval_seconds = 60

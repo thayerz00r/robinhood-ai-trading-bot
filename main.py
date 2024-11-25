@@ -394,19 +394,20 @@ def trading_bot():
 
     log_debug(f"Watchlist stocks total: {len(watchlist_stocks)}")
 
-    if len(watchlist_stocks) > WATCHLIST_OVERVIEW_LIMIT:
-        log_debug(f"Limiting watchlist stocks to overview limit of {WATCHLIST_OVERVIEW_LIMIT} (random selection)...")
-        watchlist_stocks = np.random.choice(watchlist_stocks, WATCHLIST_OVERVIEW_LIMIT, replace=False)
-
-    log_info(f"Watchlist stocks to proceed: {', '.join([stock['symbol'] for stock in watchlist_stocks])}")
-
-    log_info("Prepare watchlist overview for AI analysis...")
     watchlist_overview = {}
-    for stock_data in watchlist_stocks:
-        symbol = stock_data['symbol']
-        watchlist_overview[symbol] = extract_watchlist_data(stock_data)
-        watchlist_overview[symbol] = enrich_with_moving_averages(watchlist_overview[symbol], symbol)
-        watchlist_overview[symbol] = enrich_with_analyst_ratings(watchlist_overview[symbol], symbol)
+    if len(watchlist_stocks) > 0:
+        if len(watchlist_stocks) > WATCHLIST_OVERVIEW_LIMIT:
+            log_debug(f"Limiting watchlist stocks to overview limit of {WATCHLIST_OVERVIEW_LIMIT} (random selection)...")
+            watchlist_stocks = np.random.choice(watchlist_stocks, WATCHLIST_OVERVIEW_LIMIT, replace=False)
+
+        log_info(f"Watchlist stocks to proceed: {', '.join([stock['symbol'] for stock in watchlist_stocks])}")
+
+        log_info("Prepare watchlist overview for AI analysis...")
+        for stock_data in watchlist_stocks:
+            symbol = stock_data['symbol']
+            watchlist_overview[symbol] = extract_watchlist_data(stock_data)
+            watchlist_overview[symbol] = enrich_with_moving_averages(watchlist_overview[symbol], symbol)
+            watchlist_overview[symbol] = enrich_with_analyst_ratings(watchlist_overview[symbol], symbol)
 
     if len(portfolio_overview) == 0 and len(watchlist_overview) == 0:
         log_warning("No stocks to analyze, skipping AI-based decision-making...")

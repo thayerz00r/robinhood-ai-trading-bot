@@ -299,14 +299,14 @@ WATCHLIST_OVERVIEW_LIMIT = 10               # Number of stocks to process in dec
 PORTFOLIO_LIMIT = 10                        # Number of stocks to hold in the portfolio
 
 # OpenAI config params
-MAX_POST_DECISIONS_ADJUSTMENTS = 0          # Maximum number of adjustments to make (0 - disable adjustments)
+MAX_POST_DECISIONS_ADJUSTMENTS = False      # Maximum number of adjustments to make (False - disable adjustments)
 OPENAI_MODEL_NAME = "gpt-4o-mini"           # OpenAI model name
 
 # Trading parameters
-MIN_SELLING_AMOUNT_USD = 1.0                # Minimum sell amount in USD
-MAX_SELLING_AMOUNT_USD = 10.0               # Maximum sell amount in USD
-MIN_BUYING_AMOUNT_USD = 1.0                 # Minimum buy amount in USD
-MAX_BUYING_AMOUNT_USD = 10.0                # Maximum buy amount in USD
+MIN_SELLING_AMOUNT_USD = 1.0                # Minimum sell amount in USD (False - disable setting)
+MAX_SELLING_AMOUNT_USD = 10.0               # Maximum sell amount in USD (False - disable setting)
+MIN_BUYING_AMOUNT_USD = 1.0                 # Minimum buy amount in USD (False - disable setting)
+MAX_BUYING_AMOUNT_USD = 10.0                # Maximum buy amount in USD (False - disable setting)
 ```
 
 ### Run

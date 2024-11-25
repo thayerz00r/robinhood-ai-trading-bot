@@ -254,8 +254,28 @@ def parse_ai_response(ai_response):
     return decisions
 
 
+# Get amount guidelines
+def get_amount_guidelines():
+    sell_guidelines = []
+    if MIN_SELLING_AMOUNT_USD is not False:
+        sell_guidelines.append(f"Minimum {MIN_SELLING_AMOUNT_USD} USD")
+    if MAX_SELLING_AMOUNT_USD is not False:
+        sell_guidelines.append(f"Maximum {MAX_SELLING_AMOUNT_USD} USD")
+    sell_guidelines = ", ".join(sell_guidelines) if sell_guidelines else None
+
+    buy_guidelines = []
+    if MIN_BUYING_AMOUNT_USD is not False:
+        buy_guidelines.append(f"Minimum {MIN_BUYING_AMOUNT_USD} USD")
+    if MAX_BUYING_AMOUNT_USD is not False:
+        buy_guidelines.append(f"Maximum {MAX_BUYING_AMOUNT_USD} USD")
+    buy_guidelines = ", ".join(buy_guidelines) if buy_guidelines else None
+
+    return sell_guidelines, buy_guidelines
+
+
 # Make AI-based decisions on stock portfolio and watchlist
 def make_ai_decisions(buying_power, portfolio_overview, watchlist_overview):
+    sell_guidelines, buy_guidelines = get_amount_guidelines()
     ai_prompt = (
         "**Decision-Making AI Prompt:**\n\n"
         "**Context:**\n"
@@ -267,8 +287,8 @@ def make_ai_decisions(buying_power, portfolio_overview, watchlist_overview):
         "**Constraints:**\n"
         f"- Maintain a portfolio size of fewer than {PORTFOLIO_LIMIT} stocks.\n"
         f"- Total Buying Power: {buying_power} USD initially.\n"
-        f"- Sell Amounts Guidelines: Minimum {MIN_SELLING_AMOUNT_USD} USD, Maximum {MAX_SELLING_AMOUNT_USD} USD\n"
-        f"- Buy Amounts Guidelines: Minimum {MIN_BUYING_AMOUNT_USD} USD, Maximum {MAX_BUYING_AMOUNT_USD} USD\n\n"
+        f"{f'- Sell Amounts Guidelines: {sell_guidelines}\n' if sell_guidelines else ''}"
+        f"{f'- Buy Amounts Guidelines: {buy_guidelines}\n' if buy_guidelines else ''}\n"
         "**Portfolio Overview:**\n"
         "```json\n"
         f"{json.dumps(portfolio_overview, indent=1)}\n"
@@ -301,6 +321,7 @@ def make_ai_decisions(buying_power, portfolio_overview, watchlist_overview):
 
 # Make post-decisions adjustment based on trading results
 def make_ai_post_decisions_adjustment(buying_power, trading_results):
+    sell_guidelines, buy_guidelines = get_amount_guidelines()
     ai_prompt = (
         "**Post-Decision Adjustments AI Prompt:**\n\n"
         "**Context:**\n"
@@ -312,8 +333,8 @@ def make_ai_post_decisions_adjustment(buying_power, trading_results):
         "**Constraints:**\n"
         f"- Maintain a portfolio size of fewer than {PORTFOLIO_LIMIT} stocks.\n"
         f"- Total Buying Power: {buying_power} USD initially.\n"
-        f"- Sell Amounts Guidelines: Minimum {MIN_SELLING_AMOUNT_USD} USD, Maximum {MAX_SELLING_AMOUNT_USD} USD\n"
-        f"- Buy Amounts Guidelines: Minimum {MIN_BUYING_AMOUNT_USD} USD, Maximum {MAX_BUYING_AMOUNT_USD} USD\n\n"
+        f"{f'- Sell Amounts Guidelines: {sell_guidelines}\n' if sell_guidelines else ''}"
+        f"{f'- Buy Amounts Guidelines: {buy_guidelines}\n' if buy_guidelines else ''}\n"
         "**Trading Results:**\n"
         "```json\n"
         f"{json.dumps(trading_results, indent=1)}\n"
@@ -471,7 +492,8 @@ def trading_bot():
                     trading_results[symbol] = {"symbol": symbol, "amount": amount, "decision": "buy", "result": "error", "details": str(e)}
                     log_error(f"{symbol} > Error buying: {e}")
 
-        if post_decisions_adjustment_count >= MAX_POST_DECISIONS_ADJUSTMENTS:
+        if (MAX_POST_DECISIONS_ADJUSTMENTS is False
+                or post_decisions_adjustment_count >= MAX_POST_DECISIONS_ADJUSTMENTS):
             break
 
         try:

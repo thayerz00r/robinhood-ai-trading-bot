@@ -213,8 +213,7 @@ def sell_stock(symbol, quantity):
         if confirm.lower() != "yes":
             return {"id": "cancelled"}
 
-    time_in_force = "gtc" if quantity.is_integer() else "gfd"
-    sell_resp = rh_run_with_retries(rh.orders.order_sell_market, symbol, quantity, timeInForce=time_in_force)
+    sell_resp = rh_run_with_retries(rh.orders.order_sell_market, symbol, quantity, timeInForce="gfd")
     if sell_resp is None:
         raise Exception(f"Error selling {symbol}: No response")
     return sell_resp
@@ -230,8 +229,7 @@ def buy_stock(symbol, quantity):
         if confirm.lower() != "yes":
             return {"id": "cancelled"}
 
-    time_in_force = "gtc" if quantity.is_integer() else "gfd"
-    buy_resp = rh_run_with_retries(rh.orders.order_buy_market, symbol, quantity, timeInForce=time_in_force)
+    buy_resp = rh_run_with_retries(rh.orders.order_buy_market, symbol, quantity, timeInForce="gfd")
     if buy_resp is None:
         raise Exception(f"Error buying {symbol}: No response")
     return buy_resp

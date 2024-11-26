@@ -3,7 +3,6 @@ from openai import OpenAI
 from datetime import datetime
 import time
 import pandas as pd
-import numpy as np
 import json
 import re
 from pytz import timezone
@@ -361,6 +360,31 @@ def make_ai_post_decisions_adjustment(buying_power, trading_results):
     return decisions
 
 
+# Limit watchlist stocks based on the current day of the month
+from datetime import datetime, timedelta
+
+# Limit watchlist stocks based on the current week number
+def limit_watchlist_stocks(watchlist_stocks, limit):
+    if len(watchlist_stocks) <= limit:
+        return watchlist_stocks
+
+    # Sort watchlist stocks by symbol
+    watchlist_stocks = sorted(watchlist_stocks, key=lambda x: x['symbol'])
+
+    # Get the current month number
+    current_month = datetime.now().month
+
+    # Calculate the number of parts
+    num_parts = (len(watchlist_stocks) + limit - 1) // limit  # Ceiling division
+
+    # Determine the part to return based on the current month number
+    part_index = (current_month - 1) % num_parts
+    start_index = part_index * limit
+    end_index = min(start_index + limit, len(watchlist_stocks))
+
+    return watchlist_stocks[start_index:end_index]
+
+
 # Main trading bot function
 def trading_bot():
     log_info("Getting portfolio stocks...")
@@ -386,7 +410,7 @@ def trading_bot():
     for watchlist_name in WATCHLIST_NAMES:
         try:
             watchlist_stocks.extend(get_watchlist_stocks(watchlist_name))
-            watchlist_stocks = [stock for stock in watchlist_stocks if stock['symbol'] not in portfolio_stocks.keys()]
+            watchlist_stocks = [dict(t) for t in {tuple(d.items()) for d in watchlist_stocks}]
         except Exception as e:
             log_error(f"Error getting watchlist stocks for {watchlist_name}: {e}")
 
@@ -394,9 +418,11 @@ def trading_bot():
 
     watchlist_overview = {}
     if len(watchlist_stocks) > 0:
-        if len(watchlist_stocks) > WATCHLIST_OVERVIEW_LIMIT:
-            log_debug(f"Limiting watchlist stocks to overview limit of {WATCHLIST_OVERVIEW_LIMIT} (random selection)...")
-            watchlist_stocks = np.random.choice(watchlist_stocks, WATCHLIST_OVERVIEW_LIMIT, replace=False)
+        log_debug(f"Limiting watchlist stocks to overview limit of {WATCHLIST_OVERVIEW_LIMIT}...")
+        watchlist_stocks = limit_watchlist_stocks(watchlist_stocks, WATCHLIST_OVERVIEW_LIMIT)
+
+        log_debug(f"Removing portfolio stocks from watchlist...")
+        watchlist_stocks = [stock for stock in watchlist_stocks if stock['symbol'] not in portfolio_stocks.keys()]
 
         log_info(f"Watchlist stocks to proceed: {', '.join([stock['symbol'] for stock in watchlist_stocks])}")
 

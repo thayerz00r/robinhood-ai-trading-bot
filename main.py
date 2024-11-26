@@ -279,7 +279,7 @@ def make_ai_decisions(buying_power, portfolio_overview, watchlist_overview):
     ai_prompt = (
         "**Decision-Making AI Prompt:**\n\n"
         "**Context:**\n"
-        "You are an investment advisor managing a stock portfolio and watchlist. Every 600 seconds, you analyze market conditions to make informed investment decisions.\n\n"
+        f"You are an investment advisor managing a stock portfolio and watchlist. Every {RUN_INTERVAL_SECONDS} seconds, you analyze market conditions to make informed investment decisions.\n\n"
         "**Task:**\n"
         "Analyze the provided portfolio and watchlist data to recommend:\n"
         "1. Stocks to sell, prioritizing those that maximize buying power and profit potential.\n"

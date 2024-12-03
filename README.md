@@ -271,7 +271,7 @@ Are you sure you want to run the bot in auto mode? (yes/no): yes
 
 2. Install dependencies:
     ```sh
-    pip install robin_stocks openai pandas numpy
+    pip install robin_stocks openai pandas
     ```
 
 

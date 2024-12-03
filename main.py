@@ -3,7 +3,6 @@ from openai import OpenAI
 from datetime import datetime
 import time
 import pandas as pd
-import numpy as np
 import json
 import re
 from pytz import timezone
@@ -279,23 +278,23 @@ def make_ai_decisions(buying_power, portfolio_overview, watchlist_overview):
     ai_prompt = (
         "**Decision-Making AI Prompt:**\n\n"
         "**Context:**\n"
-        f"You are an investment advisor managing a stock portfolio and watchlist. Every {RUN_INTERVAL_SECONDS} seconds, you analyze market conditions to make informed investment decisions.\n\n"
+        f"You are an investment advisor managing a stock portfolio and watchlist. Every {RUN_INTERVAL_SECONDS} seconds, you analyze market conditions to make informed investment decisions.{chr(10)}{chr(10)}"
         "**Task:**\n"
         "Analyze the provided portfolio and watchlist data to recommend:\n"
         "1. Stocks to sell, prioritizing those that maximize buying power and profit potential.\n"
         "2. Stocks to buy that align with available funds and current market conditions.\n\n"
         "**Constraints:**\n"
-        f"- Maintain a portfolio size of fewer than {PORTFOLIO_LIMIT} stocks.\n"
-        f"- Total Buying Power: {buying_power} USD initially.\n"
-        f"{f'- Sell Amounts Guidelines: {sell_guidelines}\n' if sell_guidelines else ''}"
-        f"{f'- Buy Amounts Guidelines: {buy_guidelines}\n' if buy_guidelines else ''}\n"
+        f"- Maintain a portfolio size of fewer than {PORTFOLIO_LIMIT} stocks.{chr(10)}"
+        f"- Total Buying Power: {buying_power} USD initially.{chr(10)}"
+        f"{f'- Sell Amounts Guidelines: {sell_guidelines}{chr(10)}' if sell_guidelines else ''}"
+        f"{f'- Buy Amounts Guidelines: {buy_guidelines}{chr(10)}' if buy_guidelines else ''}{chr(10)}"
         "**Portfolio Overview:**\n"
         "```json\n"
-        f"{json.dumps(portfolio_overview, indent=1)}\n"
+        f"{json.dumps(portfolio_overview, indent=1)}{chr(10)}"
         "```\n\n"
         "**Watchlist Overview:**\n"
         "```json\n"
-        f"{json.dumps(watchlist_overview, indent=1)}\n"
+        f"{json.dumps(watchlist_overview, indent=1)}{chr(10)}"
         "```\n\n"
         "**Response Format:**\n"
         "Return your decisions in a JSON array with this structure:\n"
@@ -312,9 +311,9 @@ def make_ai_decisions(buying_power, portfolio_overview, watchlist_overview):
         "- Provide only the JSON output with no additional text.\n"
         "- Return an empty array if no actions are necessary."
     )
-    log_debug(f"AI making-decisions prompt:\n{ai_prompt}")
+    log_debug(f"AI making-decisions prompt:{chr(10)}{ai_prompt}")
     ai_response = make_ai_request(ai_prompt)
-    log_debug(f"AI making-decisions response:\n{ai_response.choices[0].message.content.strip()}")
+    log_debug(f"AI making-decisions response:{chr(10)}{ai_response.choices[0].message.content.strip()}")
     decisions = parse_ai_response(ai_response)
     return decisions
 
@@ -331,13 +330,13 @@ def make_ai_post_decisions_adjustment(buying_power, trading_results):
         "2. Reorder and adjust sell decisions to enhance buying power.\n"
         "3. Update buy recommendations based on the newly available buying power.\n\n"
         "**Constraints:**\n"
-        f"- Maintain a portfolio size of fewer than {PORTFOLIO_LIMIT} stocks.\n"
-        f"- Total Buying Power: {buying_power} USD initially.\n"
-        f"{f'- Sell Amounts Guidelines: {sell_guidelines}\n' if sell_guidelines else ''}"
-        f"{f'- Buy Amounts Guidelines: {buy_guidelines}\n' if buy_guidelines else ''}\n"
+        f"- Maintain a portfolio size of fewer than {PORTFOLIO_LIMIT} stocks.{chr(10)}"
+        f"- Total Buying Power: {buying_power} USD initially.{chr(10)}"
+        f"{f'- Sell Amounts Guidelines: {sell_guidelines}{chr(10)}' if sell_guidelines else ''}"
+        f"{f'- Buy Amounts Guidelines: {buy_guidelines}{chr(10)}' if buy_guidelines else ''}{chr(10)}"
         "**Trading Results:**\n"
         "```json\n"
-        f"{json.dumps(trading_results, indent=1)}\n"
+        f"{json.dumps(trading_results, indent=1)}{chr(10)}"
         "```\n\n"
         "**Response Format:**\n"
         "Return your decisions in a JSON array with this structure:\n"
@@ -354,11 +353,36 @@ def make_ai_post_decisions_adjustment(buying_power, trading_results):
         "- Provide only the JSON output with no additional text.\n"
         "- Return an empty array if no actions are necessary."
     )
-    log_debug(f"AI post-decisions-adjustment prompt:\n{ai_prompt}")
+    log_debug(f"AI post-decisions-adjustment prompt:{chr(10)}{ai_prompt}")
     ai_response = make_ai_request(ai_prompt)
-    log_debug(f"AI post-decisions-adjustment response:\n{ai_response.choices[0].message.content.strip()}")
+    log_debug(f"AI post-decisions-adjustment response:{chr(10)}{ai_response.choices[0].message.content.strip()}")
     decisions = parse_ai_response(ai_response)
     return decisions
+
+
+# Limit watchlist stocks based on the current day of the month
+from datetime import datetime, timedelta
+
+# Limit watchlist stocks based on the current week number
+def limit_watchlist_stocks(watchlist_stocks, limit):
+    if len(watchlist_stocks) <= limit:
+        return watchlist_stocks
+
+    # Sort watchlist stocks by symbol
+    watchlist_stocks = sorted(watchlist_stocks, key=lambda x: x['symbol'])
+
+    # Get the current month number
+    current_month = datetime.now().month
+
+    # Calculate the number of parts
+    num_parts = (len(watchlist_stocks) + limit - 1) // limit  # Ceiling division
+
+    # Determine the part to return based on the current month number
+    part_index = (current_month - 1) % num_parts
+    start_index = part_index * limit
+    end_index = min(start_index + limit, len(watchlist_stocks))
+
+    return watchlist_stocks[start_index:end_index]
 
 
 # Main trading bot function
@@ -386,7 +410,7 @@ def trading_bot():
     for watchlist_name in WATCHLIST_NAMES:
         try:
             watchlist_stocks.extend(get_watchlist_stocks(watchlist_name))
-            watchlist_stocks = [stock for stock in watchlist_stocks if stock['symbol'] not in portfolio_stocks.keys()]
+            watchlist_stocks = [dict(t) for t in {tuple(d.items()) for d in watchlist_stocks}]
         except Exception as e:
             log_error(f"Error getting watchlist stocks for {watchlist_name}: {e}")
 
@@ -394,9 +418,11 @@ def trading_bot():
 
     watchlist_overview = {}
     if len(watchlist_stocks) > 0:
-        if len(watchlist_stocks) > WATCHLIST_OVERVIEW_LIMIT:
-            log_debug(f"Limiting watchlist stocks to overview limit of {WATCHLIST_OVERVIEW_LIMIT} (random selection)...")
-            watchlist_stocks = np.random.choice(watchlist_stocks, WATCHLIST_OVERVIEW_LIMIT, replace=False)
+        log_debug(f"Limiting watchlist stocks to overview limit of {WATCHLIST_OVERVIEW_LIMIT}...")
+        watchlist_stocks = limit_watchlist_stocks(watchlist_stocks, WATCHLIST_OVERVIEW_LIMIT)
+
+        log_debug(f"Removing portfolio stocks from watchlist...")
+        watchlist_stocks = [stock for stock in watchlist_stocks if stock['symbol'] not in portfolio_stocks.keys()]
 
         log_info(f"Watchlist stocks to proceed: {', '.join([stock['symbol'] for stock in watchlist_stocks])}")
 
@@ -425,7 +451,7 @@ def trading_bot():
 
     while len(decisions_data) > 0:
         log_debug(f"Total decisions: {len(decisions_data)}")
-        log_debug(f"Decisions:\n{json.dumps(decisions_data, indent=1)}")
+        log_debug(f"Decisions:{chr(10)}{json.dumps(decisions_data, indent=1)}")
 
         log_info("Executing decisions...")
         for decision_data in decisions_data:

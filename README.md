@@ -81,6 +81,7 @@ Analyze the provided portfolio and watchlist data to recommend:
 - Total Buying Power: 3.96 USD initially.
 - Sell Amounts Guidelines: Minimum 1.0 USD, Maximum 300.0 USD
 - Buy Amounts Guidelines: Minimum 1.0 USD, Maximum 300.0 USD
+- Stocks under PDT Limit: NVDA, MSFT, SNAP, NWSA, ...
 
 **Portfolio Overview:**
 ```json
@@ -180,6 +181,7 @@ You are an investment advisor tasked with reviewing and adjusting prior trading 
 - Total Buying Power: 2.95 USD initially.
 - Sell Amounts Guidelines: Minimum 1.0 USD, Maximum 300.0 USD
 - Buy Amounts Guidelines: Minimum 1.0 USD, Maximum 300.0 USD
+- Stocks under PDT Limit: NVDA, MSFT, SNAP, NWSA, ...
 
 **Trading Results:**
 ```json
@@ -307,6 +309,7 @@ MIN_SELLING_AMOUNT_USD = 1.0                # Minimum sell amount in USD (False 
 MAX_SELLING_AMOUNT_USD = 10.0               # Maximum sell amount in USD (False - disable setting)
 MIN_BUYING_AMOUNT_USD = 1.0                 # Minimum buy amount in USD (False - disable setting)
 MAX_BUYING_AMOUNT_USD = 10.0                # Maximum buy amount in USD (False - disable setting)
+PDT_PROTECTION = True                       # Pattern day trader protection (False - disable protection). See: https://robinhood.com/us/en/support/articles/pattern-day-trade-protection/
 ```
 
 ### Run

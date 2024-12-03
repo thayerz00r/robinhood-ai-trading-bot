@@ -278,23 +278,23 @@ def make_ai_decisions(buying_power, portfolio_overview, watchlist_overview):
     ai_prompt = (
         "**Decision-Making AI Prompt:**\n\n"
         "**Context:**\n"
-        f"You are an investment advisor managing a stock portfolio and watchlist. Every {RUN_INTERVAL_SECONDS} seconds, you analyze market conditions to make informed investment decisions.\n\n"
+        f"You are an investment advisor managing a stock portfolio and watchlist. Every {RUN_INTERVAL_SECONDS} seconds, you analyze market conditions to make informed investment decisions.{chr(10)}{chr(10)}"
         "**Task:**\n"
         "Analyze the provided portfolio and watchlist data to recommend:\n"
         "1. Stocks to sell, prioritizing those that maximize buying power and profit potential.\n"
         "2. Stocks to buy that align with available funds and current market conditions.\n\n"
         "**Constraints:**\n"
-        f"- Maintain a portfolio size of fewer than {PORTFOLIO_LIMIT} stocks.\n"
-        f"- Total Buying Power: {buying_power} USD initially.\n"
-        f"{f'- Sell Amounts Guidelines: {sell_guidelines}\n' if sell_guidelines else ''}"
-        f"{f'- Buy Amounts Guidelines: {buy_guidelines}\n' if buy_guidelines else ''}\n"
+        f"- Maintain a portfolio size of fewer than {PORTFOLIO_LIMIT} stocks.{chr(10)}"
+        f"- Total Buying Power: {buying_power} USD initially.{chr(10)}"
+        f"{f'- Sell Amounts Guidelines: {sell_guidelines}{chr(10)}' if sell_guidelines else ''}"
+        f"{f'- Buy Amounts Guidelines: {buy_guidelines}{chr(10)}' if buy_guidelines else ''}{chr(10)}"
         "**Portfolio Overview:**\n"
         "```json\n"
-        f"{json.dumps(portfolio_overview, indent=1)}\n"
+        f"{json.dumps(portfolio_overview, indent=1)}{chr(10)}"
         "```\n\n"
         "**Watchlist Overview:**\n"
         "```json\n"
-        f"{json.dumps(watchlist_overview, indent=1)}\n"
+        f"{json.dumps(watchlist_overview, indent=1)}{chr(10)}"
         "```\n\n"
         "**Response Format:**\n"
         "Return your decisions in a JSON array with this structure:\n"
@@ -311,9 +311,9 @@ def make_ai_decisions(buying_power, portfolio_overview, watchlist_overview):
         "- Provide only the JSON output with no additional text.\n"
         "- Return an empty array if no actions are necessary."
     )
-    log_debug(f"AI making-decisions prompt:\n{ai_prompt}")
+    log_debug(f"AI making-decisions prompt:{chr(10)}{ai_prompt}")
     ai_response = make_ai_request(ai_prompt)
-    log_debug(f"AI making-decisions response:\n{ai_response.choices[0].message.content.strip()}")
+    log_debug(f"AI making-decisions response:{chr(10)}{ai_response.choices[0].message.content.strip()}")
     decisions = parse_ai_response(ai_response)
     return decisions
 
@@ -330,13 +330,13 @@ def make_ai_post_decisions_adjustment(buying_power, trading_results):
         "2. Reorder and adjust sell decisions to enhance buying power.\n"
         "3. Update buy recommendations based on the newly available buying power.\n\n"
         "**Constraints:**\n"
-        f"- Maintain a portfolio size of fewer than {PORTFOLIO_LIMIT} stocks.\n"
-        f"- Total Buying Power: {buying_power} USD initially.\n"
-        f"{f'- Sell Amounts Guidelines: {sell_guidelines}\n' if sell_guidelines else ''}"
-        f"{f'- Buy Amounts Guidelines: {buy_guidelines}\n' if buy_guidelines else ''}\n"
+        f"- Maintain a portfolio size of fewer than {PORTFOLIO_LIMIT} stocks.{chr(10)}"
+        f"- Total Buying Power: {buying_power} USD initially.{chr(10)}"
+        f"{f'- Sell Amounts Guidelines: {sell_guidelines}{chr(10)}' if sell_guidelines else ''}"
+        f"{f'- Buy Amounts Guidelines: {buy_guidelines}{chr(10)}' if buy_guidelines else ''}{chr(10)}"
         "**Trading Results:**\n"
         "```json\n"
-        f"{json.dumps(trading_results, indent=1)}\n"
+        f"{json.dumps(trading_results, indent=1)}{chr(10)}"
         "```\n\n"
         "**Response Format:**\n"
         "Return your decisions in a JSON array with this structure:\n"
@@ -353,9 +353,9 @@ def make_ai_post_decisions_adjustment(buying_power, trading_results):
         "- Provide only the JSON output with no additional text.\n"
         "- Return an empty array if no actions are necessary."
     )
-    log_debug(f"AI post-decisions-adjustment prompt:\n{ai_prompt}")
+    log_debug(f"AI post-decisions-adjustment prompt:{chr(10)}{ai_prompt}")
     ai_response = make_ai_request(ai_prompt)
-    log_debug(f"AI post-decisions-adjustment response:\n{ai_response.choices[0].message.content.strip()}")
+    log_debug(f"AI post-decisions-adjustment response:{chr(10)}{ai_response.choices[0].message.content.strip()}")
     decisions = parse_ai_response(ai_response)
     return decisions
 
@@ -451,7 +451,7 @@ def trading_bot():
 
     while len(decisions_data) > 0:
         log_debug(f"Total decisions: {len(decisions_data)}")
-        log_debug(f"Decisions:\n{json.dumps(decisions_data, indent=1)}")
+        log_debug(f"Decisions:{chr(10)}{json.dumps(decisions_data, indent=1)}")
 
         log_info("Executing decisions...")
         for decision_data in decisions_data:

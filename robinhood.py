@@ -122,8 +122,7 @@ def get_buying_power():
     resp = rh_run_with_retries(rh.profiles.load_account_profile)
     if resp is None or 'buying_power' not in resp:
         raise Exception("Error getting profile data: No response")
-    buying_power = round_money(resp['buying_power'])
-    return buying_power
+    return round_money(resp['buying_power'])
 
 
 # Get portfolio stocks
@@ -155,8 +154,7 @@ def get_historical_data(symbol, interval="day", span="year"):
     resp = rh_run_with_retries(rh.stocks.get_stock_historicals, symbol, interval=interval, span=span)
     if resp is None:
         raise Exception(f"Error getting historical data for {symbol}: No response")
-    prices = [round_money(day['close_price']) for day in resp]
-    return prices
+    return [round_money(day['close_price']) for day in resp]
 
 
 # Sell a stock by symbol and quantity

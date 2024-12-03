@@ -6,6 +6,7 @@ import re
 from config import *
 from log import *
 from robinhood import *
+from trading_logs import *
 
 
 # Initialize session and login
@@ -53,6 +54,7 @@ def get_ai_amount_guidelines():
 # Make AI-based decisions on stock portfolio and watchlist
 def make_ai_decisions(buying_power, portfolio_overview, watchlist_overview):
     sell_guidelines, buy_guidelines = get_ai_amount_guidelines()
+    symbols_under_limit = get_stocks_from_db_under_day_trade_limit() if PDT_PROTECTION else []
     ai_prompt = (
         "**Decision-Making AI Prompt:**\n\n"
         "**Context:**\n"
@@ -65,7 +67,8 @@ def make_ai_decisions(buying_power, portfolio_overview, watchlist_overview):
         f"- Maintain a portfolio size of fewer than {PORTFOLIO_LIMIT} stocks.{chr(10)}"
         f"- Total Buying Power: {buying_power} USD initially.{chr(10)}"
         f"{f'- Sell Amounts Guidelines: {sell_guidelines}{chr(10)}' if sell_guidelines else ''}"
-        f"{f'- Buy Amounts Guidelines: {buy_guidelines}{chr(10)}' if buy_guidelines else ''}{chr(10)}"
+        f"{f'- Buy Amounts Guidelines: {buy_guidelines}{chr(10)}' if buy_guidelines else ''}"
+        f"{f'- Stocks under PDT Limit: {', '.join(symbols_under_limit)}{chr(10)}' if symbols_under_limit else ''}{chr(10)}"
         "**Portfolio Overview:**\n"
         "```json\n"
         f"{json.dumps(portfolio_overview, indent=1)}{chr(10)}"
@@ -99,6 +102,7 @@ def make_ai_decisions(buying_power, portfolio_overview, watchlist_overview):
 # Make post-decisions adjustment based on trading results
 def make_ai_post_decisions_adjustment(buying_power, trading_results):
     sell_guidelines, buy_guidelines = get_ai_amount_guidelines()
+    symbols_under_limit = get_stocks_from_db_under_day_trade_limit() if PDT_PROTECTION else []
     ai_prompt = (
         "**Post-Decision Adjustments AI Prompt:**\n\n"
         "**Context:**\n"
@@ -111,7 +115,8 @@ def make_ai_post_decisions_adjustment(buying_power, trading_results):
         f"- Maintain a portfolio size of fewer than {PORTFOLIO_LIMIT} stocks.{chr(10)}"
         f"- Total Buying Power: {buying_power} USD initially.{chr(10)}"
         f"{f'- Sell Amounts Guidelines: {sell_guidelines}{chr(10)}' if sell_guidelines else ''}"
-        f"{f'- Buy Amounts Guidelines: {buy_guidelines}{chr(10)}' if buy_guidelines else ''}{chr(10)}"
+        f"{f'- Buy Amounts Guidelines: {buy_guidelines}{chr(10)}' if buy_guidelines else ''}"
+        f"{f'- Stocks under PDT Limit: {', '.join(symbols_under_limit)}{chr(10)}' if symbols_under_limit else ''}{chr(10)}"
         "**Trading Results:**\n"
         "```json\n"
         f"{json.dumps(trading_results, indent=1)}{chr(10)}"
@@ -218,7 +223,7 @@ def trading_bot():
 
     try:
         log_info("Making AI-based decision...")
-        buying_power = round_money(get_buying_power())
+        buying_power = get_buying_power()
         decisions_data = make_ai_decisions(buying_power, portfolio_overview, watchlist_overview)
     except Exception as e:
         log_error(f"Error making AI-based decision: {e}")
@@ -248,6 +253,7 @@ def trading_bot():
                         else:
                             details = extract_sell_response_data(sell_resp)
                             trading_results[symbol] = {"symbol": symbol, "quantity": quantity, "decision": "sell", "result": "success", "details": details}
+                            log_trade_to_db(symbol, "sell", quantity)
                             log_info(f"{symbol} > Sold {quantity} stocks")
                     else:
                         details = sell_resp['detail'] if 'detail' in sell_resp else sell_resp
@@ -270,6 +276,7 @@ def trading_bot():
                         else:
                             details = extract_buy_response_data(buy_resp)
                             trading_results[symbol] = {"symbol": symbol, "quantity": quantity, "decision": "buy", "result": "success", "details": details}
+                            log_trade_to_db(symbol, "buy", quantity)
                             log_info(f"{symbol} > Bought {quantity} stocks")
                     else:
                         details = buy_resp['detail'] if 'detail' in buy_resp else buy_resp
@@ -286,7 +293,7 @@ def trading_bot():
         try:
             post_decisions_adjustment_count += 1
             log_info(f"Making AI-based post-decision analysis, attempt: {post_decisions_adjustment_count}/{MAX_POST_DECISIONS_ADJUSTMENTS}...")
-            buying_power = round_money(get_buying_power())
+            buying_power = get_buying_power()
             decisions_data = make_ai_post_decisions_adjustment(buying_power, trading_results)
             log_debug(f"Total post-decision adjustments: {len(decisions_data)}")
         except Exception as e:

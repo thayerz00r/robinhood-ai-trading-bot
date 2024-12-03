@@ -176,7 +176,7 @@ def trading_bot():
     for stock in portfolio_stocks.values():
         portfolio_stocks_value += float(stock['price']) * float(stock['quantity'])
     portfolio = [f"{symbol} ({round(float(stock['price']) * float(stock['quantity']) / portfolio_stocks_value * 100, 2)}%)" for symbol, stock in portfolio_stocks.items()]
-    log_info(f"Portfolio stocks to proceed: {"None" if len(portfolio) == 0 else ', '.join(portfolio)}")
+    log_info(f"Portfolio stocks to proceed: {'None' if len(portfolio) == 0 else ', '.join(portfolio)}")
 
     log_info("Prepare portfolio stocks for AI analysis...")
     portfolio_overview = {}

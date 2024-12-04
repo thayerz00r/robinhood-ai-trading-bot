@@ -31,13 +31,13 @@ def log_trade_to_db(symbol, decision, quantity):
 # Function to get the total quantity of a stock traded
 def get_stocks_from_db_under_day_trade_limit():
     now = datetime.now()
-    #TODO: It should be 5 days, but then we need to skip weekends
-    seven_days_ago = now - timedelta(days=7)
+    five_days_ago = now - timedelta(days=7)
     cursor.execute('''
     SELECT symbol, COUNT(*) as day_trade_count
     FROM trading_logs
     WHERE timestamp > ?
+    AND strftime('%w', timestamp) NOT IN ('0', '6')
     GROUP BY symbol
     HAVING day_trade_count >= 3
-    ''', (seven_days_ago,))
+    ''', (five_days_ago,))
     return [row[0] for row in cursor.fetchall()]

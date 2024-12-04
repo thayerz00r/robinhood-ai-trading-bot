@@ -55,6 +55,18 @@ def get_ai_amount_guidelines():
 def make_ai_decisions(buying_power, portfolio_overview, watchlist_overview):
     sell_guidelines, buy_guidelines = get_ai_amount_guidelines()
     symbols_under_limit = get_stocks_from_db_under_day_trade_limit() if PDT_PROTECTION else []
+
+    constraints = [
+        f"- Maintain a portfolio size of fewer than {PORTFOLIO_LIMIT} stocks.",
+        f"- Total Buying Power: {buying_power} USD initially."
+    ]
+    if sell_guidelines:
+        constraints.append(f"- Sell Amounts Guidelines: {sell_guidelines}")
+    if buy_guidelines:
+        constraints.append(f"- Buy Amounts Guidelines: {buy_guidelines}")
+    if len(symbols_under_limit) > 0:
+        constraints.append(f"- Stocks under PDT Limit: {', '.join(symbols_under_limit)}")
+
     ai_prompt = (
         "**Decision-Making AI Prompt:**\n\n"
         "**Context:**\n"
@@ -64,12 +76,8 @@ def make_ai_decisions(buying_power, portfolio_overview, watchlist_overview):
         "1. Stocks to sell, prioritizing those that maximize buying power and profit potential.\n"
         "2. Stocks to buy that align with available funds and current market conditions.\n\n"
         "**Constraints:**\n"
-        f"- Maintain a portfolio size of fewer than {PORTFOLIO_LIMIT} stocks.{chr(10)}"
-        f"- Total Buying Power: {buying_power} USD initially.{chr(10)}"
-        f"{f'- Sell Amounts Guidelines: {sell_guidelines}{chr(10)}' if sell_guidelines else ''}"
-        f"{f'- Buy Amounts Guidelines: {buy_guidelines}{chr(10)}' if buy_guidelines else ''}"
-        f"{f'- Stocks under PDT Limit: {', '.join(symbols_under_limit)}{chr(10)}' if symbols_under_limit else ''}"
-        f"{chr(10)}"
+        f"{chr(10).join(constraints)}"
+        "\n\n"
         "**Portfolio Overview:**\n"
         "```json\n"
         f"{json.dumps(portfolio_overview, indent=1)}{chr(10)}"
@@ -104,6 +112,18 @@ def make_ai_decisions(buying_power, portfolio_overview, watchlist_overview):
 def make_ai_post_decisions_adjustment(buying_power, trading_results):
     sell_guidelines, buy_guidelines = get_ai_amount_guidelines()
     symbols_under_limit = get_stocks_from_db_under_day_trade_limit() if PDT_PROTECTION else []
+
+    constraints = [
+        f"- Maintain a portfolio size of fewer than {PORTFOLIO_LIMIT} stocks.",
+        f"- Total Buying Power: {buying_power} USD initially."
+    ]
+    if sell_guidelines:
+        constraints.append(f"- Sell Amounts Guidelines: {sell_guidelines}")
+    if buy_guidelines:
+        constraints.append(f"- Buy Amounts Guidelines: {buy_guidelines}")
+    if len(symbols_under_limit) > 0:
+        constraints.append(f"- Stocks under PDT Limit: {', '.join(symbols_under_limit)}")
+
     ai_prompt = (
         "**Post-Decision Adjustments AI Prompt:**\n\n"
         "**Context:**\n"
@@ -113,12 +133,8 @@ def make_ai_post_decisions_adjustment(buying_power, trading_results):
         "2. Reorder and adjust sell decisions to enhance buying power.\n"
         "3. Update buy recommendations based on the newly available buying power.\n\n"
         "**Constraints:**\n"
-        f"- Maintain a portfolio size of fewer than {PORTFOLIO_LIMIT} stocks.{chr(10)}"
-        f"- Total Buying Power: {buying_power} USD initially.{chr(10)}"
-        f"{f'- Sell Amounts Guidelines: {sell_guidelines}{chr(10)}' if sell_guidelines else ''}"
-        f"{f'- Buy Amounts Guidelines: {buy_guidelines}{chr(10)}' if buy_guidelines else ''}"
-        f"{f'- Stocks under PDT Limit: {', '.join(symbols_under_limit)}{chr(10)}' if symbols_under_limit else ''}"
-        f"{chr(10)}"
+        f"{chr(10).join(constraints)}"
+        "\n\n"
         "**Trading Results:**\n"
         "```json\n"
         f"{json.dumps(trading_results, indent=1)}{chr(10)}"

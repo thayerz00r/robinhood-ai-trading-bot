@@ -309,7 +309,7 @@ MIN_SELLING_AMOUNT_USD = 1.0                # Minimum sell amount in USD (False 
 MAX_SELLING_AMOUNT_USD = 10.0               # Maximum sell amount in USD (False - disable setting)
 MIN_BUYING_AMOUNT_USD = 1.0                 # Minimum buy amount in USD (False - disable setting)
 MAX_BUYING_AMOUNT_USD = 10.0                # Maximum buy amount in USD (False - disable setting)
-PDT_PROTECTION = True                       # Pattern day trader protection (False - disable protection). See: https://robinhood.com/us/en/support/articles/pattern-day-trade-protection/
+PDT_PROTECTION = True                       # [Beta] Pattern day trader protection (False - disable protection). See: https://robinhood.com/us/en/support/articles/pattern-day-trade-protection/
 ```
 
 ### Run

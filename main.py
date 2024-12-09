@@ -66,6 +66,8 @@ def make_ai_decisions(buying_power, portfolio_overview, watchlist_overview):
         constraints.append(f"- Buy Amounts Guidelines: {buy_guidelines}")
     if len(symbols_under_limit) > 0:
         constraints.append(f"- Stocks under PDT Limit: {', '.join(symbols_under_limit)}")
+    if len(TRADE_EXCEPTIONS) > 0:
+        constraints.append(f"- Trade Exceptions (exclude from trading in any decisions): {', '.join(TRADE_EXCEPTIONS)}")
 
     ai_prompt = (
         "**Decision-Making AI Prompt:**\n\n"
@@ -123,6 +125,8 @@ def make_ai_post_decisions_adjustment(buying_power, trading_results):
         constraints.append(f"- Buy Amounts Guidelines: {buy_guidelines}")
     if len(symbols_under_limit) > 0:
         constraints.append(f"- Stocks under PDT Limit: {', '.join(symbols_under_limit)}")
+    if len(TRADE_EXCEPTIONS) > 0:
+        constraints.append(f"- Trade Exceptions (exclude from trading in any decisions): {', '.join(TRADE_EXCEPTIONS)}")
 
     ai_prompt = (
         "**Post-Decision Adjustments AI Prompt:**\n\n"
@@ -257,6 +261,11 @@ def trading_bot():
             decision = decision_data['decision']
             quantity = decision_data['quantity']
             log_info(f"{symbol} > Decision: {decision} of {quantity}")
+
+            if symbol in TRADE_EXCEPTIONS:
+                trading_results[symbol] = {"symbol": symbol, "quantity": quantity, "decision": decision, "result": "error", "details": "Trade exception"}
+                log_warning(f"{symbol} > Decision skipped due to trade exception")
+                continue
 
             if decision == "sell":
                 try:

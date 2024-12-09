@@ -26,9 +26,11 @@ This is a scientific experiment to see how AI can trade stocks better than human
 
 ### Features
 - **AI-Powered Trading**: Leverages OpenAI to provide smart, data-driven trading decisions.
-- **Post-Decision Adjustments**: Refines trading moves based on trade outcomes.
+- **Post-Decision Adjustments (beta)**: Refines trading moves based on trade outcomes.
 - **Portfolio & Watchlist Integration**: Analyze and trade stocks from both your Robinhood portfolio and watchlist.
 - **Customizable Parameters**: Set trading limits and conditions to fit your strategy.
+- **Trading Exceptions**: Exclude specific stocks from trading.
+- **Pattern Day Trader Protection (beta)**: Avoids PDT restrictions by considering the number of day trades.
 - **Demo Mode**: Safely test trades without real execution.
 - **Manual Mode**: Approve each trade individually.
 - **Auto Mode**: Automate trades based on AI guidance.
@@ -296,20 +298,19 @@ LOG_LEVEL = "INFO"                          # Log level (DEBUG, INFO)
 RUN_INTERVAL_SECONDS = 600                  # Trading interval in seconds (if the market is open)
 
 # Robinhood config parameters
+TRADE_EXCEPTIONS = []                       # List of stocks to exclude from trading (e.g. ["AAPL", "TSLA", "AMZN"])
 WATCHLIST_NAMES = []                        # Watchlist names (can be empty, or "My First List", "My Second List", etc.)
 WATCHLIST_OVERVIEW_LIMIT = 10               # Number of stocks to process in decision-making (e.g. 20)
 PORTFOLIO_LIMIT = 10                        # Number of stocks to hold in the portfolio
-
-# OpenAI config params
-OPENAI_MODEL_NAME = "gpt-4o-mini"           # OpenAI model name
-MAX_POST_DECISIONS_ADJUSTMENTS = False      # Maximum number of adjustments to make (False - disable adjustments)
-
-# Trading parameters
 MIN_SELLING_AMOUNT_USD = 1.0                # Minimum sell amount in USD (False - disable setting)
 MAX_SELLING_AMOUNT_USD = 10.0               # Maximum sell amount in USD (False - disable setting)
 MIN_BUYING_AMOUNT_USD = 1.0                 # Minimum buy amount in USD (False - disable setting)
 MAX_BUYING_AMOUNT_USD = 10.0                # Maximum buy amount in USD (False - disable setting)
-PDT_PROTECTION = True                       # [Beta] Pattern day trader protection (False - disable protection). See: https://robinhood.com/us/en/support/articles/pattern-day-trade-protection/
+PDT_PROTECTION = False                      # [Beta] Pattern day trader protection (False - disable protection). See: https://robinhood.com/us/en/support/articles/pattern-day-trade-protection/
+
+# OpenAI config params
+OPENAI_MODEL_NAME = "gpt-4o-mini"           # OpenAI model name
+MAX_POST_DECISIONS_ADJUSTMENTS = False      # Maximum number of adjustments to make (False - disable adjustments)
 ```
 
 ### Run

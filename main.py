@@ -264,7 +264,7 @@ def trading_bot():
 
             if symbol in TRADE_EXCEPTIONS:
                 trading_results[symbol] = {"symbol": symbol, "quantity": quantity, "decision": decision, "result": "error", "details": "Trade exception"}
-                log_warning(f"{symbol} > Trade exception")
+                log_warning(f"{symbol} > Decision skipped due to trade exception")
                 continue
 
             if decision == "sell":

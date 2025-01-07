@@ -4,9 +4,27 @@ from pytz import timezone
 import pandas as pd
 
 from log import *
-from config import MODE, ROBINHOOD_USERNAME, ROBINHOOD_PASSWORD
+import pyotp
+import sys
+from config import MODE, ROBINHOOD_USERNAME, ROBINHOOD_PASSWORD, ROBINHOOD_MFA_SECRET
 
-rh.login(ROBINHOOD_USERNAME, ROBINHOOD_PASSWORD)
+
+# Attempt to login to Robinhood
+try:
+    if ROBINHOOD_MFA_SECRET:
+        log_debug("Attempting to login to Robinhood with MFA...")
+        mfa_code = pyotp.TOTP(ROBINHOOD_MFA_SECRET).now()
+        log_debug(f"Generated MFA code: {mfa_code}")
+        login = rh.login(ROBINHOOD_USERNAME, ROBINHOOD_PASSWORD, mfa_code=mfa_code)
+        log_debug("Robinhood login successful with MFA.")
+    else:
+        log_debug("Attempting to login to Robinhood without MFA...")
+        login = rh.login(ROBINHOOD_USERNAME, ROBINHOOD_PASSWORD)
+        log_debug("Robinhood login successful without MFA.")
+except Exception as e:
+    log_error(f"An error occurred during Robinhood login: {e}")
+    sys.exit(1)
+
 
 # Run a Robinhood function with retries and delay between attempts (to handle rate limits)
 def rh_run_with_retries(func, *args, max_retries=3, delay=60, **kwargs):

@@ -291,6 +291,7 @@ Configuration parameters:
 OPENAI_API_KEY = "..."                      # OpenAI API key
 ROBINHOOD_USERNAME = "..."                  # Robinhood username
 ROBINHOOD_PASSWORD = "..."                  # Robinhood password
+ROBINHOOD_MFA_SECRET = ""                   # Robinhood MFA secret (if enabled)
 
 # Basic config parameters
 MODE = "demo"                               # Trading mode (demo, auto, manual)
@@ -312,6 +313,18 @@ PDT_PROTECTION = False                      # [Beta] Pattern day trader protecti
 OPENAI_MODEL_NAME = "gpt-4o-mini"           # OpenAI model name
 MAX_POST_DECISIONS_ADJUSTMENTS = False      # Maximum number of adjustments to make (False - disable adjustments)
 ```
+
+
+#### Robinhood MFA Secret
+If you have Multi-Factor Authentication (MFA) enabled on your Robinhood account, you will need to provide the `ROBINHOOD_MFA_SECRET`.
+Here is how you can get it:
+1. Log in to your Robinhood account on your phone. Important to use your phone because it will display the secret key but not the QR code.
+2. Navigate to the security settings.
+3. Enable MFA if it is not already enabled. When setting up MFA, you will be asked to select an authentication method on your phone. Choose "Authenticator app" and Robinhood will provide you with a secret key. This is your `ROBINHOOD_MFA_SECRET`.
+4. Copy this secret key and paste it into the `config.py` file.
+5. Enter the same secret key into your authentication app on the same PC where you run the script (e.g., Google Authenticator). Note: If you enter the secret on a different device, it will generate a different value.
+6. After entering the same secret on the same PC, use the generated TOTP number to authenticate with the Robinhood app.
+
 
 ### Run
 To start the bot, run the following command in your terminal:

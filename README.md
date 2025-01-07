@@ -58,7 +58,7 @@ The bot's analytical system incorporates moving averages and Robinhood analyst r
 
 This is Robinhood's analyst rating system example:
 
-![Robinhood Analyst Ratings](images/analyst_ratings.png)
+![Robinhood Analyst Ratings](images/robinhood_analyst_ratings.png)
 
 
 #### AI-Powered Decision-Making System

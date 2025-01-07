@@ -58,7 +58,7 @@ The bot's analytical system incorporates moving averages and Robinhood analyst r
 
 This is Robinhood's analyst rating system example:
 
-![Robinhood Analyst Ratings](images/robinhood_analyst_ratings.png)
+![Robinhood Analyst Ratings](images/analyst_ratings.png)
 
 
 #### AI-Powered Decision-Making System
@@ -94,9 +94,9 @@ Analyze the provided portfolio and watchlist data to recommend:
   "average_buy_price": 226.93,
   "50_day_mavg_price": 226.88,
   "200_day_mavg_price": 202.76,
-  "robinhood_analyst_sell_opinion": "Regulators have a keen eye on Apple, and recent regulations have chipped away at parts of Apple\u2019s sticky ecosystem. ",
-  "robinhood_analyst_buy_opinion": "Apple has a stellar balance sheet and sends great amounts of cash flow back to shareholders.",
-  "robinhood_analyst_summary_distribution": "sell: 6%, buy: 67%, hold: 27%"
+  "analyst_sell_opinion": "Regulators have a keen eye on Apple, and recent regulations have chipped away at parts of Apple\u2019s sticky ecosystem. ",
+  "analyst_buy_opinion": "Apple has a stellar balance sheet and sends great amounts of cash flow back to shareholders.",
+  "analyst_summary_distribution": "sell: 6%, buy: 67%, hold: 27%"
  },
  "NVDA": {
   "price": 147.13,
@@ -104,9 +104,9 @@ Analyze the provided portfolio and watchlist data to recommend:
   "average_buy_price": 147.19,
   "50_day_mavg_price": 126.67,
   "200_day_mavg_price": 106.37,
-  "robinhood_analyst_sell_opinion": "Nvidia\u2019s gaming GPU business has often seen boom-or-bust cycles based on PC demand and, more recently, cryptocurrency mining.",
-  "robinhood_analyst_buy_opinion": "The firm has a first-mover advantage in the autonomous driving market that could lead to widespread adoption of its Drive PX self-driving platform.",
-  "robinhood_analyst_summary_distribution": "sell: 0%, buy: 92%, hold: 8%"
+  "analyst_sell_opinion": "Nvidia\u2019s gaming GPU business has often seen boom-or-bust cycles based on PC demand and, more recently, cryptocurrency mining.",
+  "analyst_buy_opinion": "The firm has a first-mover advantage in the autonomous driving market that could lead to widespread adoption of its Drive PX self-driving platform.",
+  "analyst_summary_distribution": "sell: 0%, buy: 92%, hold: 8%"
  },
  ...
 }
@@ -119,15 +119,15 @@ Analyze the provided portfolio and watchlist data to recommend:
   "price": 53.05,
   "50_day_mavg_price": 52.99,
   "200_day_mavg_price": 45.76,
-  "robinhood_analyst_sell_opinion": "The possibility of highly competitive foreign internet service providers reentering China over the next 10-20 years.",
-  "robinhood_analyst_buy_opinion": "Compliance costs can rise to a point where they become significant barriers to entry to the Chinese internet industry.",
-  "robinhood_analyst_summary_distribution": "sell: 3%, buy: 95%, hold: 2%"
+  "analyst_sell_opinion": "The possibility of highly competitive foreign internet service providers reentering China over the next 10-20 years.",
+  "analyst_buy_opinion": "Compliance costs can rise to a point where they become significant barriers to entry to the Chinese internet industry.",
+  "analyst_summary_distribution": "sell: 3%, buy: 95%, hold: 2%"
  },
  "NSSC": {
   "price": 39.1,
   "50_day_mavg_price": 39.5,
   "200_day_mavg_price": 44.88,
-  "robinhood_analyst_summary_distribution": "sell: 0%, buy: 83%, hold: 17%"
+  "analyst_summary_distribution": "sell: 0%, buy: 83%, hold: 17%"
  },
  ...
 }

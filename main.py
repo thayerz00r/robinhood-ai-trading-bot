@@ -27,7 +27,7 @@ def parse_ai_response(ai_response):
     try:
         ai_content = re.sub(r'```json|```', '', ai_response.choices[0].message.content.strip())
         decisions = json.loads(ai_content)
-    except json.JSONDecodeError as e:
+    except json.JSONDecodeError:
         raise Exception("Invalid JSON response from OpenAI: " + ai_response.choices[0].message.content.strip())
     return decisions
 
@@ -36,16 +36,16 @@ def parse_ai_response(ai_response):
 def get_ai_amount_guidelines():
     sell_guidelines = []
     if MIN_SELLING_AMOUNT_USD is not False:
-        sell_guidelines.append(f"Minimum {MIN_SELLING_AMOUNT_USD} USD")
+        sell_guidelines.append(f"Minimum amount {MIN_SELLING_AMOUNT_USD} USD")
     if MAX_SELLING_AMOUNT_USD is not False:
-        sell_guidelines.append(f"Maximum {MAX_SELLING_AMOUNT_USD} USD")
+        sell_guidelines.append(f"Maximum amount {MAX_SELLING_AMOUNT_USD} USD")
     sell_guidelines = ", ".join(sell_guidelines) if sell_guidelines else None
 
     buy_guidelines = []
     if MIN_BUYING_AMOUNT_USD is not False:
-        buy_guidelines.append(f"Minimum {MIN_BUYING_AMOUNT_USD} USD")
+        buy_guidelines.append(f"Minimum amount {MIN_BUYING_AMOUNT_USD} USD")
     if MAX_BUYING_AMOUNT_USD is not False:
-        buy_guidelines.append(f"Maximum {MAX_BUYING_AMOUNT_USD} USD")
+        buy_guidelines.append(f"Maximum amount {MAX_BUYING_AMOUNT_USD} USD")
     buy_guidelines = ", ".join(buy_guidelines) if buy_guidelines else None
 
     return sell_guidelines, buy_guidelines

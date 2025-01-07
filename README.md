@@ -84,6 +84,7 @@ Analyze the provided portfolio and watchlist data to recommend:
 - Sell Amounts Guidelines: Minimum 1.0 USD, Maximum 300.0 USD
 - Buy Amounts Guidelines: Minimum 1.0 USD, Maximum 300.0 USD
 - Stocks under PDT Limit: NVDA, MSFT, SNAP, NWSA, ...
+- Trade Exceptions (exclude from trading in any decisions): AAPL, TSLA, AMZN, ...
 
 **Portfolio Overview:**
 ```json
@@ -181,8 +182,8 @@ You are an investment advisor tasked with reviewing and adjusting prior trading 
 **Constraints:**
 - Maintain a portfolio size of fewer than 10 stocks.
 - Total Buying Power: 2.95 USD initially.
-- Sell Amounts Guidelines: Minimum 1.0 USD, Maximum 300.0 USD
-- Buy Amounts Guidelines: Minimum 1.0 USD, Maximum 300.0 USD
+- Sell Amounts Guidelines: Minimum amount 1.0 USD, Maximum amount 300.0 USD
+- Buy Amounts Guidelines: Minimum amount 1.0 USD, Maximum amount 300.0 USD
 - Stocks under PDT Limit: NVDA, MSFT, SNAP, NWSA, ...
 
 **Trading Results:**

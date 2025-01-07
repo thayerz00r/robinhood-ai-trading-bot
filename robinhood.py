@@ -4,9 +4,27 @@ from pytz import timezone
 import pandas as pd
 
 from log import *
-from config import MODE, ROBINHOOD_USERNAME, ROBINHOOD_PASSWORD
+import pyotp
+import sys
+from config import MODE, ROBINHOOD_USERNAME, ROBINHOOD_PASSWORD, ROBINHOOD_MFA_SECRET
 
-rh.login(ROBINHOOD_USERNAME, ROBINHOOD_PASSWORD)
+
+# Attempt to login to Robinhood
+try:
+    if ROBINHOOD_MFA_SECRET:
+        log_debug("Attempting to login to Robinhood with MFA...")
+        mfa_code = pyotp.TOTP(ROBINHOOD_MFA_SECRET).now()
+        log_debug(f"Generated MFA code: {mfa_code}")
+        login = rh.login(ROBINHOOD_USERNAME, ROBINHOOD_PASSWORD, mfa_code=mfa_code)
+        log_debug("Robinhood login successful with MFA.")
+    else:
+        log_debug("Attempting to login to Robinhood without MFA...")
+        login = rh.login(ROBINHOOD_USERNAME, ROBINHOOD_PASSWORD)
+        log_debug("Robinhood login successful without MFA.")
+except Exception as e:
+    log_error(f"An error occurred during Robinhood login: {e}")
+    sys.exit(1)
+
 
 # Run a Robinhood function with retries and delay between attempts (to handle rate limits)
 def rh_run_with_retries(func, *args, max_retries=3, delay=60, **kwargs):
@@ -103,9 +121,9 @@ def enrich_with_analyst_ratings(stock_data, symbol):
         last_sell_rating = next((rating for rating in ratings['ratings'] if rating['type'] == "sell"), None)
         last_buy_rating = next((rating for rating in ratings['ratings'] if rating['type'] == "buy"), None)
         if last_sell_rating:
-            stock_data["robinhood_analyst_sell_opinion"] = last_sell_rating['text'].decode('utf-8')
+            stock_data["analyst_sell_opinion"] = last_sell_rating['text'].decode('utf-8')
         if last_buy_rating:
-            stock_data["robinhood_analyst_buy_opinion"] = last_buy_rating['text'].decode('utf-8')
+            stock_data["analyst_buy_opinion"] = last_buy_rating['text'].decode('utf-8')
     if 'summary' in ratings and ratings['summary']:
         summary = ratings['summary']
         total_ratings = sum([summary['num_buy_ratings'], summary['num_hold_ratings'], summary['num_sell_ratings']])
@@ -113,7 +131,7 @@ def enrich_with_analyst_ratings(stock_data, symbol):
             buy_percent = summary['num_buy_ratings'] / total_ratings * 100
             sell_percent = summary['num_sell_ratings'] / total_ratings * 100
             hold_percent = summary['num_hold_ratings'] / total_ratings * 100
-            stock_data["robinhood_analyst_summary_distribution"] = f"sell: {sell_percent:.0f}%, buy: {buy_percent:.0f}%, hold: {hold_percent:.0f}%"
+            stock_data["analyst_summary_distribution"] = f"sell: {sell_percent:.0f}%, buy: {buy_percent:.0f}%, hold: {hold_percent:.0f}%"
     return stock_data
 
 

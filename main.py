@@ -7,6 +7,7 @@ from config import *
 from log import *
 from robinhood import *
 from trading_logs import *
+import asyncio
 
 
 # Initialize session and login
@@ -331,9 +332,11 @@ def trading_bot():
 
 
 # Run trading bot in a loop
-def main():
+async def main():
     while True:
         try:
+            await login_to_robinhood()
+
             if is_market_open():
                 run_interval_seconds = RUN_INTERVAL_SECONDS
                 log_info(f"Market is open, running trading bot in {MODE} mode...")
@@ -363,4 +366,4 @@ if __name__ == '__main__':
     if confirm.lower() != "yes":
         log_warning("Exiting the bot...")
         exit()
-    main()
+    asyncio.run(main())

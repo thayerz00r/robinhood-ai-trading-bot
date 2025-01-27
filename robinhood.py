@@ -2,28 +2,42 @@ import robin_stocks.robinhood as rh
 import time
 from pytz import timezone
 import pandas as pd
+from onepassword import *
 
 from log import *
 import pyotp
 import sys
 from config import MODE, ROBINHOOD_USERNAME, ROBINHOOD_PASSWORD, ROBINHOOD_MFA_SECRET
+from config import OP_SERVICE_ACCOUNT_NAME, OP_SERVICE_ACCOUNT_TOKEN, OP_VAULT_NAME, OP_ITEM_NAME
 
 
-# Attempt to login to Robinhood
-try:
-    if ROBINHOOD_MFA_SECRET:
-        log_debug("Attempting to login to Robinhood with MFA...")
-        mfa_code = pyotp.TOTP(ROBINHOOD_MFA_SECRET).now()
-        log_debug(f"Generated MFA code: {mfa_code}")
-        login = rh.login(ROBINHOOD_USERNAME, ROBINHOOD_PASSWORD, mfa_code=mfa_code)
-        log_debug("Robinhood login successful with MFA.")
-    else:
-        log_debug("Attempting to login to Robinhood without MFA...")
-        login = rh.login(ROBINHOOD_USERNAME, ROBINHOOD_PASSWORD)
+async def login_to_robinhood():
+    try:
+        mfa_code = ""
+        if ROBINHOOD_MFA_SECRET:
+            mfa_code = pyotp.TOTP(ROBINHOOD_MFA_SECRET).now()
+            log_debug(f"Generated MFA code based on MFA secret: {mfa_code}")
+        elif OP_SERVICE_ACCOUNT_NAME and OP_SERVICE_ACCOUNT_TOKEN and OP_VAULT_NAME and OP_ITEM_NAME:
+            log_debug("Attempting to login to 1Password to get MFA code...")
+            onePasswordClient = await Client.authenticate(
+                auth=OP_SERVICE_ACCOUNT_TOKEN,
+                integration_name=OP_SERVICE_ACCOUNT_NAME,
+                integration_version="v1.0.0",
+            )
+            mfa_code = await onePasswordClient.secrets.resolve("op://" + OP_VAULT_NAME + "/" + OP_ITEM_NAME + "/one-time password?attribute=otp")
+
+        if mfa_code:
+            log_debug("Attempting to login to Robinhood with MFA...")
+            rh.login(ROBINHOOD_USERNAME, ROBINHOOD_PASSWORD, mfa_code=mfa_code)
+        else:
+            log_debug("Attempting to login to Robinhood without MFA...")
+            rh.login(ROBINHOOD_USERNAME, ROBINHOOD_PASSWORD)
+
         log_debug("Robinhood login successful without MFA.")
-except Exception as e:
-    log_error(f"An error occurred during Robinhood login: {e}")
-    sys.exit(1)
+
+    except Exception as e:
+        log_error(f"An error occurred during Robinhood login: {e}")
+        sys.exit(1)
 
 
 # Run a Robinhood function with retries and delay between attempts (to handle rate limits)

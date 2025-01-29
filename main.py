@@ -333,10 +333,10 @@ def trading_bot():
 
 # Run trading bot in a loop
 async def main():
+    await login_to_robinhood()
+
     while True:
         try:
-            await login_to_robinhood()
-
             if is_market_open():
                 run_interval_seconds = RUN_INTERVAL_SECONDS
                 log_info(f"Market is open, running trading bot in {MODE} mode...")

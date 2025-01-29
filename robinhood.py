@@ -29,11 +29,11 @@ async def login_to_robinhood():
         if mfa_code:
             log_debug("Attempting to login to Robinhood with MFA...")
             rh.login(ROBINHOOD_USERNAME, ROBINHOOD_PASSWORD, mfa_code=mfa_code)
+            log_debug("Robinhood login successful with MFA.")
         else:
             log_debug("Attempting to login to Robinhood without MFA...")
             rh.login(ROBINHOOD_USERNAME, ROBINHOOD_PASSWORD)
-
-        log_debug("Robinhood login successful without MFA.")
+            log_debug("Robinhood login successful without MFA.")
 
     except Exception as e:
         log_error(f"An error occurred during Robinhood login: {e}")

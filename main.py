@@ -111,61 +111,6 @@ def make_ai_decisions(buying_power, portfolio_overview, watchlist_overview):
     return decisions
 
 
-# Make post-decisions adjustment based on trading results
-def make_ai_post_decisions_adjustment(buying_power, trading_results):
-    sell_guidelines, buy_guidelines = get_ai_amount_guidelines()
-    symbols_under_limit = get_stocks_from_db_under_day_trade_limit() if PDT_PROTECTION else []
-
-    constraints = [
-        f"- Maintain a portfolio size of fewer than {PORTFOLIO_LIMIT} stocks.",
-        f"- Total Buying Power: {buying_power} USD initially."
-    ]
-    if sell_guidelines:
-        constraints.append(f"- Sell Amounts Guidelines: {sell_guidelines}")
-    if buy_guidelines:
-        constraints.append(f"- Buy Amounts Guidelines: {buy_guidelines}")
-    if len(symbols_under_limit) > 0:
-        constraints.append(f"- Stocks under PDT Limit: {', '.join(symbols_under_limit)}")
-    if len(TRADE_EXCEPTIONS) > 0:
-        constraints.append(f"- Trade Exceptions (exclude from trading in any decisions): {', '.join(TRADE_EXCEPTIONS)}")
-
-    ai_prompt = (
-        "**Post-Decision Adjustments AI Prompt:**\n\n"
-        "**Context:**\n"
-        "You are an investment advisor tasked with reviewing and adjusting prior trading decisions. Your goal is to optimize buying power and profit potential by analyzing trading results and making necessary changes.\n\n"
-        "**Task:**\n"
-        "1. Review previous trading outcomes and resolve any errors.\n"
-        "2. Reorder and adjust sell decisions to enhance buying power.\n"
-        "3. Update buy recommendations based on the newly available buying power.\n\n"
-        "**Constraints:**\n"
-        f"{chr(10).join(constraints)}"
-        "\n\n"
-        "**Trading Results:**\n"
-        "```json\n"
-        f"{json.dumps(trading_results, indent=1)}{chr(10)}"
-        "```\n\n"
-        "**Response Format:**\n"
-        "Return your decisions in a JSON array with this structure:\n"
-        "```json\n"
-        "[\n"
-        '  {"symbol": "<symbol>", "decision": "<decision>", "quantity": <quantity>},\n'
-        "  ...\n"
-        "]\n"
-        "```\n"
-        "- `symbol`: Stock ticker symbol.\n"
-        "- `decision`: One of `buy`, `sell`, or `hold`.\n"
-        "- `quantity`: Recommended transaction quantity.\n\n"
-        "**Instructions:**\n"
-        "- Provide only the JSON output with no additional text.\n"
-        "- Return an empty array if no actions are necessary."
-    )
-    log_debug(f"AI post-decisions-adjustment prompt:{chr(10)}{ai_prompt}")
-    ai_response = make_ai_request(ai_prompt)
-    log_debug(f"AI post-decisions-adjustment response:{chr(10)}{ai_response.choices[0].message.content.strip()}")
-    decisions = parse_ai_response(ai_response)
-    return decisions
-
-
 # Limit watchlist stocks based on the current week number
 def limit_watchlist_stocks(watchlist_stocks, limit):
     if len(watchlist_stocks) <= limit:
@@ -242,7 +187,6 @@ def trading_bot():
 
     decisions_data = []
     trading_results = {}
-    post_decisions_adjustment_count = 0
 
     try:
         log_info("Making AI-based decision...")
@@ -313,20 +257,6 @@ def trading_bot():
                 except Exception as e:
                     trading_results[symbol] = {"symbol": symbol, "quantity": quantity, "decision": "buy", "result": "error", "details": str(e)}
                     log_error(f"{symbol} > Error buying: {e}")
-
-        if (MAX_POST_DECISIONS_ADJUSTMENTS is False
-                or post_decisions_adjustment_count >= MAX_POST_DECISIONS_ADJUSTMENTS):
-            break
-
-        try:
-            post_decisions_adjustment_count += 1
-            log_info(f"Making AI-based post-decision analysis, attempt: {post_decisions_adjustment_count}/{MAX_POST_DECISIONS_ADJUSTMENTS}...")
-            buying_power = get_buying_power()
-            decisions_data = make_ai_post_decisions_adjustment(buying_power, trading_results)
-            log_debug(f"Total post-decision adjustments: {len(decisions_data)}")
-        except Exception as e:
-            log_error(f"Error making post-decision analysis: {e}")
-            break
 
     return trading_results
 

@@ -28,4 +28,3 @@ PDT_PROTECTION = False                      # [Beta] Pattern day trader protecti
 
 # OpenAI config params
 OPENAI_MODEL_NAME = "gpt-4o-mini"           # OpenAI model name
-MAX_POST_DECISIONS_ADJUSTMENTS = False      # [Beta] Maximum number of adjustments to make (False - disable adjustments)

@@ -26,7 +26,6 @@ This is a scientific experiment to see how AI can trade stocks better than human
 
 ### Features
 - **AI-Powered Trading**: Leverages OpenAI to provide smart, data-driven trading decisions.
-- **Post-Decision Adjustments (beta)**: Refines trading moves based on trade outcomes.
 - **Portfolio & Watchlist Integration**: Analyze and trade stocks from both your Robinhood portfolio and watchlist.
 - **Customizable Parameters**: Set trading limits and conditions to fit your strategy.
 - **Trading Exceptions**: Exclude specific stocks from trading.
@@ -46,9 +45,8 @@ This is a scientific experiment to see how AI can trade stocks better than human
 5. **Analyze Stock Prices and Ratings**: Calculates moving averages and includes Robinhood analyst ratings.
 6. **AI-Powered Decisions**: Sends stock data to OpenAI, receiving trading decisions (sell, buy, or hold) for each stock.
 7. **Execute Trades**: Executes initial trading decisions.
-8. **Post-Decision Adjustments**: Adjusts trades based on executed outcomes.
-9. **Execute Adjusted Trades**: Executes refined trading decisions.
-10. **Repeat**: Continues to analyze, trade, and adjust as market conditions evolve.
+8. **Execute Adjusted Trades**: Executes refined trading decisions.
+9. **Repeat**: Continues to analyze, trade, and adjust as market conditions evolve.
 
 
 #### Analyze Stock Prices and Ratings System
@@ -162,80 +160,6 @@ AI-response example:
 ```
 
 
-#### AI-Powered Post-Decision Adjustments System
-The bot adjusts its trading decisions based on the outcomes of executed trades:
-1. **Input Data**: The bot feeds the executed trades data to OpenAI.
-2. **Output Data**: OpenAI provides adjustments to the trading decisions based on the trading results.
-
-Post-decision adjustments AI-prompt example:  
-``````
-**Post-Decision Adjustments AI Prompt:**
-
-**Context:**
-You are an investment advisor tasked with reviewing and adjusting prior trading decisions. Your goal is to optimize buying power and profit potential by analyzing trading results and making necessary changes.
-
-**Task:**
-1. Review previous trading outcomes and resolve any errors.
-2. Reorder and adjust sell decisions to enhance buying power.
-3. Update buy recommendations based on the newly available buying power.
-
-**Constraints:**
-- Maintain a portfolio size of fewer than 10 stocks.
-- Total Buying Power: 2.95 USD initially.
-- Sell Amounts Guidelines: Minimum amount 1.0 USD, Maximum amount 300.0 USD
-- Buy Amounts Guidelines: Minimum amount 1.0 USD, Maximum amount 300.0 USD
-- Stocks under PDT Limit: NVDA, MSFT, SNAP, NWSA, ...
-
-**Trading Results:**
-```json
-{
- "AAPL": {
-  "symbol": "AAPL",
-  "amount": 1.0,
-  "decision": "sell",
-  "result": "success",
-  "details": {
-   "quantity": 0.004394,
-   "price": null
-  }
- },
- "NVDA": {
-  "symbol": "NVDA",
-  "amount": 1.0,
-  "decision": "sell",
-  "result": "error",
-  "details": "Not enough shares to sell."
- },
- ...
-}
-```
-
-**Response Format:**
-Return your decisions in a JSON array with this structure:
-```json
-[
-  {"symbol": "<symbol>", "decision": "<decision>", "quantity": <quantity>},
-  ...
-]
-```
-- `symbol`: Stock ticker symbol.
-- `decision`: One of `buy`, `sell`, or `hold`.
-- `quantity`: Recommended transaction quantity.
-
-**Instructions:**
-- Provide only the JSON output with no additional text.
-- Return an empty array if no actions are necessary.
-``````
-
-AI-response example:
-```
-[
-    {"symbol": "AAPL", "decision": "sell", "quantity": 0.004394},
-    ...
-]
-```
-
-
 #### Logging System
 The bot logs its activity and trading decisions in a console log.
 Log example:
@@ -258,7 +182,6 @@ Are you sure you want to run the bot in auto mode? (yes/no): yes
 [2024-11-01 11:07:23] [INFO]    VRT > Bought 2.09 stocks
 [2024-11-01 11:07:23] [INFO]    SNAP > Decision: hold of 0.0323
 [2024-11-01 11:07:23] [INFO]    VIAV > Decision: hold of 0.0212
-[2024-11-01 11:07:23] [INFO]    Making AI-based post-decision analysis, attempt: 1/2...
 [2024-11-01 11:07:24] [INFO]    Stocks sold: NVDA (2.0)
 [2024-11-01 11:07:24] [INFO]    Stocks bought: VRT (2.09)
 [2024-11-01 11:07:24] [INFO]    Errors: MSFT (Not enough shares to sell.)
@@ -318,7 +241,6 @@ PDT_PROTECTION = False                      # [Beta] Pattern day trader protecti
 
 # OpenAI config params
 OPENAI_MODEL_NAME = "gpt-4o-mini"           # OpenAI model name
-MAX_POST_DECISIONS_ADJUSTMENTS = False      # Maximum number of adjustments to make (False - disable adjustments)
 ```
 
 

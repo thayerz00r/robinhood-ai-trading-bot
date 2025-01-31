@@ -118,13 +118,41 @@ def extract_buy_response_data(buy_resp):
     }
 
 
+# Enrich stock data with RSI
+def enrich_with_rsi(stock_data, symbol):
+    prices = get_historical_data(symbol, interval="5minute", span="day")
+    if len(prices) < 14:
+        log_debug(f"Not enough data to calculate RSI for {symbol}")
+        return stock_data
+
+    delta = pd.Series(prices).diff()
+    gain = delta.where(delta > 0, 0)
+    loss = -delta.where(delta < 0, 0)
+
+    avg_gain = gain.rolling(window=14).mean().iloc[-1]
+    avg_loss = loss.rolling(window=14).mean().iloc[-1]
+
+    if avg_loss == 0:
+        rs = 100
+    else:
+        rs = avg_gain / avg_loss
+
+    rsi = 100 - (100 / (1 + rs))
+    stock_data["rsi"] = round(float(rsi), 2)
+
+    return stock_data
+
+
 # Enrich stock data with moving averages
 def enrich_with_moving_averages(stock_data, symbol):
     prices = get_historical_data(symbol)
-    if len(prices) >= 200:
-        moving_avg_50, moving_avg_200 = calculate_moving_averages(prices)
-        stock_data["50_day_mavg_price"] = round_money(moving_avg_50)
-        stock_data["200_day_mavg_price"] = round_money(moving_avg_200)
+    if len(prices) < 200:
+        log_debug(f"Not enough data to calculate moving averages for {symbol}")
+        return stock_data
+
+    moving_avg_50, moving_avg_200 = calculate_moving_averages(prices)
+    stock_data["50_day_mavg_price"] = round_money(moving_avg_50)
+    stock_data["200_day_mavg_price"] = round_money(moving_avg_200)
     return stock_data
 
 

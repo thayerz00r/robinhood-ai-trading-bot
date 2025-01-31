@@ -150,6 +150,7 @@ def trading_bot():
     portfolio_overview = {}
     for symbol, stock_data in portfolio_stocks.items():
         portfolio_overview[symbol] = extract_my_stocks_data(stock_data)
+        portfolio_overview[symbol] = enrich_with_rsi(portfolio_overview[symbol], symbol)
         portfolio_overview[symbol] = enrich_with_moving_averages(portfolio_overview[symbol], symbol)
         portfolio_overview[symbol] = enrich_with_analyst_ratings(portfolio_overview[symbol], symbol)
 
@@ -178,6 +179,7 @@ def trading_bot():
         for stock_data in watchlist_stocks:
             symbol = stock_data['symbol']
             watchlist_overview[symbol] = extract_watchlist_data(stock_data)
+            watchlist_overview[symbol] = enrich_with_rsi(watchlist_overview[symbol], symbol)
             watchlist_overview[symbol] = enrich_with_moving_averages(watchlist_overview[symbol], symbol)
             watchlist_overview[symbol] = enrich_with_analyst_ratings(watchlist_overview[symbol], symbol)
 

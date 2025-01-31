@@ -54,19 +54,15 @@ def get_ai_amount_guidelines():
 
 # Make AI-based decisions on stock portfolio and watchlist
 def make_ai_decisions(buying_power, portfolio_overview, watchlist_overview):
-    sell_guidelines, buy_guidelines = get_ai_amount_guidelines()
-    symbols_under_limit = get_stocks_from_db_under_day_trade_limit() if PDT_PROTECTION else []
-
     constraints = [
         f"- Your current budget (initial buying power): {buying_power} USD.",
         f"- Maximum portfolio size (maintain a portfolio size of fewer this number): {PORTFOLIO_LIMIT} stocks.",
     ]
+    sell_guidelines, buy_guidelines = get_ai_amount_guidelines()
     if sell_guidelines:
         constraints.append(f"- Sell Amounts Guidelines: {sell_guidelines}")
     if buy_guidelines:
         constraints.append(f"- Buy Amounts Guidelines: {buy_guidelines}")
-    if len(symbols_under_limit) > 0:
-        constraints.append(f"- Stocks under PDT Limit: {', '.join(symbols_under_limit)}")
     if len(TRADE_EXCEPTIONS) > 0:
         constraints.append(f"- Trade Exceptions (exclude from trading in any decisions): {', '.join(TRADE_EXCEPTIONS)}")
 

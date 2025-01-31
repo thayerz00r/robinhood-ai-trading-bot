@@ -29,7 +29,6 @@ This is a scientific experiment to see how AI can trade stocks better than human
 - **Portfolio & Watchlist Integration**: Analyze and trade stocks from both your Robinhood portfolio and watchlist.
 - **Customizable Parameters**: Set trading limits and conditions to fit your strategy.
 - **Trading Exceptions**: Exclude specific stocks from trading.
-- **Pattern Day Trader Protection (beta)**: Avoids PDT restrictions by considering the number of day trades.
 - **Demo Mode**: Safely test trades without real execution.
 - **Manual Mode**: Approve each trade individually.
 - **Auto Mode**: Automate trades based on AI guidance.
@@ -280,7 +279,6 @@ MIN_SELLING_AMOUNT_USD = 1.0                # Minimum sell amount in USD (False 
 MAX_SELLING_AMOUNT_USD = 10.0               # Maximum sell amount in USD (False - disable setting)
 MIN_BUYING_AMOUNT_USD = 1.0                 # Minimum buy amount in USD (False - disable setting)
 MAX_BUYING_AMOUNT_USD = 10.0                # Maximum buy amount in USD (False - disable setting)
-PDT_PROTECTION = False                      # [Beta] Pattern day trader protection (False - disable protection). See: https://robinhood.com/us/en/support/articles/pattern-day-trade-protection/
 
 # OpenAI config params
 OPENAI_MODEL_NAME = "gpt-4o-mini"           # OpenAI model name

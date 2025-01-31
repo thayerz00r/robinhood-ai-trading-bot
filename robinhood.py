@@ -89,16 +89,18 @@ def calculate_moving_averages(prices, short_window=50, long_window=200):
 # Extract data from my stocks
 def extract_my_stocks_data(stock_data):
     return {
-        "price": round_money(stock_data['price']),
-        "quantity": round_quantity(stock_data['quantity']),
-        "average_buy_price": round_money(stock_data['average_buy_price']),
+        "current_price": round_money(stock_data['price']),
+        "my_quantity": round_quantity(stock_data['quantity']),
+        "my_average_buy_price": round_money(stock_data['average_buy_price']),
     }
 
 
 # Extract data from watchlist stocks
 def extract_watchlist_data(stock_data):
     return {
-        "price": round_money(stock_data['price']),
+        "current_price": round_money(stock_data['price']),
+        "my_quantity": round_quantity(0),
+        "my_average_buy_price": round_money(0),
     }
 
 

@@ -42,7 +42,7 @@ This is a scientific experiment to see how AI can trade stocks better than human
 2. **Login to Robinhood**: Logs into your Robinhood account with your credentials.
 3. **Fetch Portfolio Stocks**: Retrieves stocks from your portfolio.
 4. **Fetch Watchlist Stocks**: Retrieves a limited number of stocks from your watchlist, selecting randomly if needed to meet the limit.
-5. **Analyze Stock Prices and Ratings**: Calculates moving averages and includes Robinhood analyst ratings.
+5. **Analyze Stock Prices and Ratings**: Calculates RSI, moving averages and includes Robinhood analyst ratings.
 6. **AI-Powered Decisions**: Sends stock data to OpenAI, receiving trading decisions (sell, buy, or hold) for each stock.
 7. **Execute Trades**: Executes initial trading decisions.
 8. **Execute Adjusted Trades**: Executes refined trading decisions.
@@ -51,7 +51,8 @@ This is a scientific experiment to see how AI can trade stocks better than human
 
 #### Analyze Stock Prices and Ratings System
 The bot's analytical system incorporates moving averages and Robinhood analyst ratings to inform trading decisions:
-1. **Moving Averages**: The bot calculates moving averages (50-day and 200-day) for each stock to evaluate price trends and identify optimal buy and sell points.
+1. **Relative Strength Index (RSI)**: The bot calculates the RSI for each stock to determine overbought or oversold conditions.
+2. **Moving Averages**: The bot calculates moving averages (50-day and 200-day) for each stock to evaluate price trends and identify optimal buy and sell points.
 2. **Robinhood Analyst Ratings**: The bot fetches bullish and bearish ratings from Robinhood for each stock, providing additional insights into market sentiment and potential price movements.
 
 This is Robinhood's analyst rating system example:
@@ -61,72 +62,114 @@ This is Robinhood's analyst rating system example:
 
 #### AI-Powered Decision-Making System
 The bot leverages OpenAI to make data-driven trading decisions based on the stock data:
-1. **Input Data**: The bot feeds the stock data (moving averages, analyst ratings) to OpenAI.
+1. **Input Data**: The bot feeds the stock data (rsi, moving averages, analyst ratings) to OpenAI.
 2. **Output Data**: OpenAI provides trading decisions (sell, buy, or hold) for each stock.
 
 Decision-making AI-prompt example:  
 ``````
-**Decision-Making AI Prompt:**
-
 **Context:**
-You are an investment advisor managing a stock portfolio and watchlist. Every 600 seconds, you analyze market conditions to make informed investment decisions.
-
-**Task:**
-Analyze the provided portfolio and watchlist data to recommend:
-1. Stocks to sell, prioritizing those that maximize buying power and profit potential.
-2. Stocks to buy that align with available funds and current market conditions.
+Today is 2025-01-31T14:31:12Z.
+You are a short-term investment advisor managing a stock portfolio.
+Every 3600 seconds, you analyze market conditions to make investment decisions.
+You need to decide whether to buy, sell, or hold each of these stocks based on the given data.
 
 **Constraints:**
-- Maintain a portfolio size of fewer than 10 stocks.
-- Total Buying Power: 3.96 USD initially.
-- Sell Amounts Guidelines: Minimum 1.0 USD, Maximum 300.0 USD
-- Buy Amounts Guidelines: Minimum 1.0 USD, Maximum 300.0 USD
-- Stocks under PDT Limit: NVDA, MSFT, SNAP, NWSA, ...
-- Trade Exceptions (exclude from trading in any decisions): AAPL, TSLA, AMZN, ...
+- Your current budget (initial buying power): 0.0 USD.
+- Maximum portfolio size (maintain a portfolio size of fewer this number): 20 stocks.
+- Trade Exceptions (exclude from trading in any decisions): VOO, SPY, IVV
 
-**Portfolio Overview:**
+**Stock Portfolio Overview:**
 ```json
 {
  "AAPL": {
-  "price": 227.59,
-  "quantity": 0.564172,
-  "average_buy_price": 226.93,
-  "50_day_mavg_price": 226.88,
-  "200_day_mavg_price": 202.76,
-  "analyst_sell_opinion": "Regulators have a keen eye on Apple, and recent regulations have chipped away at parts of Apple\u2019s sticky ecosystem. ",
-  "analyst_buy_opinion": "Apple has a stellar balance sheet and sends great amounts of cash flow back to shareholders.",
-  "analyst_summary_distribution": "sell: 6%, buy: 67%, hold: 27%"
+  "current_price": 235.19,
+  "my_quantity": 0.00066,
+  "my_average_buy_price": 242.42,
+  "rsi": 32.99,
+  "50_day_mavg_price": 240.01,
+  "200_day_mavg_price": 219.38,
+  "analyst_summary": {
+   "num_buy_ratings": 31,
+   "num_hold_ratings": 16,
+   "num_sell_ratings": 5
+  },
+  "analyst_ratings": [
+   {
+    "published_at": "2025-01-30T19:07:26Z",
+    "type": "sell",
+    "text": "Regulators have a keen eye on Apple, and recent regulations have chipped away at parts of Apple\u2019s sticky ecosystem. "
+   },
+   {
+    "published_at": "2025-01-30T19:07:26Z",
+    "type": "sell",
+    "text": "Apple\u2019s supply chain is highly concentrated in China and Taiwan, which opens up the firm to geopolitical risk. Attempts to diversify into other regions may pressure profitability or efficiency."
+   },
+   {
+    "published_at": "2025-01-30T19:07:26Z",
+    "type": "sell",
+    "text": "Apple is prone to consumer spending and preferences, which creates cyclicality and opens the firm up to disruption."
+   },
+   {
+    "published_at": "2025-01-30T19:07:26Z",
+    "type": "buy",
+    "text": "Apple has a stellar balance sheet and sends great amounts of cash flow back to shareholders."
+   },
+   {
+    "published_at": "2025-01-30T19:07:26Z",
+    "type": "buy",
+    "text": "We like Apple\u2019s move to in-house chip development, which we think has accelerated its product development and increased its differentiation. "
+   },
+   {
+    "published_at": "2025-01-30T19:07:26Z",
+    "type": "buy",
+    "text": "Apple offers an expansive ecosystem of tightly integrated hardware, software, and services, which locks in customers and generates strong profitability."
+   }
+  ]
  },
- "NVDA": {
-  "price": 147.13,
-  "quantity": 0.000302,
-  "average_buy_price": 147.19,
-  "50_day_mavg_price": 126.67,
-  "200_day_mavg_price": 106.37,
-  "analyst_sell_opinion": "Nvidia\u2019s gaming GPU business has often seen boom-or-bust cycles based on PC demand and, more recently, cryptocurrency mining.",
-  "analyst_buy_opinion": "The firm has a first-mover advantage in the autonomous driving market that could lead to widespread adoption of its Drive PX self-driving platform.",
-  "analyst_summary_distribution": "sell: 0%, buy: 92%, hold: 8%"
- },
- ...
-}
-```
-
-**Watchlist Overview:**
-```json
-{
- "TCEHY": {
-  "price": 53.05,
-  "50_day_mavg_price": 52.99,
-  "200_day_mavg_price": 45.76,
-  "analyst_sell_opinion": "The possibility of highly competitive foreign internet service providers reentering China over the next 10-20 years.",
-  "analyst_buy_opinion": "Compliance costs can rise to a point where they become significant barriers to entry to the Chinese internet industry.",
-  "analyst_summary_distribution": "sell: 3%, buy: 95%, hold: 2%"
- },
- "NSSC": {
-  "price": 39.1,
-  "50_day_mavg_price": 39.5,
-  "200_day_mavg_price": 44.88,
-  "analyst_summary_distribution": "sell: 0%, buy: 83%, hold: 17%"
+ "MSFT": {
+  "current_price": 416.59,
+  "my_quantity": 0.0,
+  "my_average_buy_price": 0.0,
+  "rsi": 35.86,
+  "50_day_mavg_price": 431.35,
+  "200_day_mavg_price": 425.72,
+  "analyst_summary": {
+   "num_buy_ratings": 57,
+   "num_hold_ratings": 3,
+   "num_sell_ratings": 0
+  },
+  "analyst_ratings": [
+   {
+    "published_at": "2025-01-31T11:05:36Z",
+    "type": "sell",
+    "text": "Microsoft is not the top player in its key sources of growth, notably Azure and Dynamics."
+   },
+   {
+    "published_at": "2025-01-31T11:05:36Z",
+    "type": "sell",
+    "text": "Microsoft lacks a meaningful mobile presence."
+   },
+   {
+    "published_at": "2025-01-31T11:05:36Z",
+    "type": "sell",
+    "text": "Momentum is slowing in the ongoing shift to subscriptions, particularly in Office, which is generally considered a mature product."
+   },
+   {
+    "published_at": "2025-01-31T11:05:36Z",
+    "type": "buy",
+    "text": "Microsoft has monopoly like positions in various areas (OS, Office) that serve as cash cows to help drive Azure growth."
+   },
+   {
+    "published_at": "2025-01-31T11:05:36Z",
+    "type": "buy",
+    "text": "Microsoft 365 continues to benefit from upselling into higher-priced stock-keeping units as customers are willing to pay up for better security and Teams Phone, which should continue over the next several years."
+   },
+   {
+    "published_at": "2025-01-31T11:05:36Z",
+    "type": "buy",
+    "text": "Public cloud is widely considered to be the future of enterprise computing, and Azure is a leading service that benefits the evolution to first to hybrid environments, and then ultimately to public cloud environments."
+   }
+  ]
  },
  ...
 }
@@ -140,7 +183,7 @@ Return your decisions in a JSON array with this structure:
   ...
 ]
 ```
-- `symbol`: Stock ticker symbol.
+- `symbol`: Stock symbol.
 - `decision`: One of `buy`, `sell`, or `hold`.
 - `quantity`: Recommended transaction quantity.
 

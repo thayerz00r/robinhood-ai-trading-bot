@@ -58,8 +58,8 @@ def make_ai_decisions(buying_power, portfolio_overview, watchlist_overview):
     symbols_under_limit = get_stocks_from_db_under_day_trade_limit() if PDT_PROTECTION else []
 
     constraints = [
-        f"- Maintain a portfolio size of fewer than {PORTFOLIO_LIMIT} stocks.",
-        f"- Total Buying Power: {buying_power} USD initially."
+        f"- Your current budget (initial buying power): {buying_power} USD.",
+        f"- Maximum portfolio size (maintain a portfolio size of fewer this number): {PORTFOLIO_LIMIT} stocks.",
     ]
     if sell_guidelines:
         constraints.append(f"- Sell Amounts Guidelines: {sell_guidelines}")
@@ -71,23 +71,17 @@ def make_ai_decisions(buying_power, portfolio_overview, watchlist_overview):
         constraints.append(f"- Trade Exceptions (exclude from trading in any decisions): {', '.join(TRADE_EXCEPTIONS)}")
 
     ai_prompt = (
-        "**Decision-Making AI Prompt:**\n\n"
         "**Context:**\n"
-        f"You are an investment advisor managing a stock portfolio and watchlist. Every {RUN_INTERVAL_SECONDS} seconds, you analyze market conditions to make informed investment decisions.{chr(10)}{chr(10)}"
-        "**Task:**\n"
-        "Analyze the provided portfolio and watchlist data to recommend:\n"
-        "1. Stocks to sell, prioritizing those that maximize buying power and profit potential.\n"
-        "2. Stocks to buy that align with available funds and current market conditions.\n\n"
+        f"Today is {datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')}.{chr(10)}"
+        f"You are a short-term investment advisor managing a stock portfolio.{chr(10)}"
+        f"Every {RUN_INTERVAL_SECONDS} seconds, you analyze market conditions to make investment decisions.{chr(10)}"
+        f"You need to decide whether to buy, sell, or hold each of these stocks based on the given data.{chr(10)}{chr(10)}"
         "**Constraints:**\n"
         f"{chr(10).join(constraints)}"
         "\n\n"
-        "**Portfolio Overview:**\n"
+        "**Stock Portfolio Overview:**\n"
         "```json\n"
-        f"{json.dumps(portfolio_overview, indent=1)}{chr(10)}"
-        "```\n\n"
-        "**Watchlist Overview:**\n"
-        "```json\n"
-        f"{json.dumps(watchlist_overview, indent=1)}{chr(10)}"
+        f"{json.dumps({**portfolio_overview, **watchlist_overview}, indent=1)}{chr(10)}"
         "```\n\n"
         "**Response Format:**\n"
         "Return your decisions in a JSON array with this structure:\n"
@@ -97,7 +91,7 @@ def make_ai_decisions(buying_power, portfolio_overview, watchlist_overview):
         "  ...\n"
         "]\n"
         "```\n"
-        "- `symbol`: Stock ticker symbol.\n"
+        "- `symbol`: Stock symbol.\n"
         "- `decision`: One of `buy`, `sell`, or `hold`.\n"
         "- `quantity`: Recommended transaction quantity.\n\n"
         "**Instructions:**\n"

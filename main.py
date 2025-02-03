@@ -54,8 +54,8 @@ def get_ai_amount_guidelines():
 # Make AI-based decisions on stock portfolio and watchlist
 def make_ai_decisions(buying_power, portfolio_overview, watchlist_overview):
     constraints = [
-        f"- Your current budget (initial buying power): {buying_power} USD.",
-        f"- Maximum portfolio size (maintain a portfolio size of fewer this number): {PORTFOLIO_LIMIT} stocks.",
+        f"- Initial budget: {buying_power} USD",
+        f"- Max portfolio size: {PORTFOLIO_LIMIT} stocks",
     ]
     sell_guidelines, buy_guidelines = get_ai_amount_guidelines()
     if sell_guidelines:
@@ -63,18 +63,17 @@ def make_ai_decisions(buying_power, portfolio_overview, watchlist_overview):
     if buy_guidelines:
         constraints.append(f"- Buy Amounts Guidelines: {buy_guidelines}")
     if len(TRADE_EXCEPTIONS) > 0:
-        constraints.append(f"- Trade Exceptions (exclude from trading in any decisions): {', '.join(TRADE_EXCEPTIONS)}")
+        constraints.append(f"- Excluded stocks: {', '.join(TRADE_EXCEPTIONS)}")
 
     ai_prompt = (
         "**Context:**\n"
         f"Today is {datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')}.{chr(10)}"
         f"You are a short-term investment advisor managing a stock portfolio.{chr(10)}"
-        f"Every {RUN_INTERVAL_SECONDS} seconds, you analyze market conditions to make investment decisions.{chr(10)}"
-        f"You need to decide whether to buy, sell, or hold each of these stocks based on the given data.{chr(10)}{chr(10)}"
+        f"You analyze market conditions every {RUN_INTERVAL_SECONDS} seconds and make investment decisions.{chr(10)}{chr(10)}"
         "**Constraints:**\n"
         f"{chr(10).join(constraints)}"
         "\n\n"
-        "**Stock Portfolio Overview:**\n"
+        "**Stock Data:**\n"
         "```json\n"
         f"{json.dumps({**portfolio_overview, **watchlist_overview}, indent=1)}{chr(10)}"
         "```\n\n"
@@ -82,13 +81,13 @@ def make_ai_decisions(buying_power, portfolio_overview, watchlist_overview):
         "Return your decisions in a JSON array with this structure:\n"
         "```json\n"
         "[\n"
-        '  {"symbol": "<symbol>", "decision": "<decision>", "quantity": <quantity>},\n'
+        '  {"symbol": <symbol>, "decision": <decision>, "quantity": <quantity>},\n'
         "  ...\n"
         "]\n"
         "```\n"
-        "- `symbol`: Stock symbol.\n"
-        "- `decision`: One of `buy`, `sell`, or `hold`.\n"
-        "- `quantity`: Recommended transaction quantity.\n\n"
+        "- <symbol>: Stock symbol.\n"
+        "- <decision>: One of `buy`, `sell`, or `hold`.\n"
+        "- <quantity>: Recommended transaction quantity.\n\n"
         "**Instructions:**\n"
         "- Provide only the JSON output with no additional text.\n"
         "- Return an empty array if no actions are necessary."

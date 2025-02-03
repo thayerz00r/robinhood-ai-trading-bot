@@ -6,7 +6,6 @@ import re
 from config import *
 from log import *
 from robinhood import *
-from trading_logs import *
 import asyncio
 
 
@@ -235,7 +234,6 @@ def trading_bot():
                     else:
                         details = extract_sell_response_data(sell_resp)
                         trading_results[symbol] = {"symbol": symbol, "quantity": quantity, "decision": "sell", "result": "success", "details": details}
-                        log_trade_to_db(symbol, "sell", quantity)
                         log_info(f"{symbol} > Sold {quantity} stocks")
                 else:
                     details = sell_resp['detail'] if 'detail' in sell_resp else sell_resp
@@ -258,7 +256,6 @@ def trading_bot():
                     else:
                         details = extract_buy_response_data(buy_resp)
                         trading_results[symbol] = {"symbol": symbol, "quantity": quantity, "decision": "buy", "result": "success", "details": details}
-                        log_trade_to_db(symbol, "buy", quantity)
                         log_info(f"{symbol} > Bought {quantity} stocks")
                 else:
                     details = buy_resp['detail'] if 'detail' in buy_resp else buy_resp

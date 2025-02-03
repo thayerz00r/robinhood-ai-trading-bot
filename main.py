@@ -101,6 +101,12 @@ def make_ai_decisions(buying_power, portfolio_overview, watchlist_overview):
     return decisions
 
 
+# Filter AI hallucinations
+def filter_ai_hallucinations(decisions):
+    # Filter if it's sell or buy with 0 quantity
+    decisions = [decision for decision in decisions if decision['decision'] == "hold" or decision['quantity'] > 0]
+    return decisions
+
 # Limit watchlist stocks based on the current week number
 def limit_watchlist_stocks(watchlist_stocks, limit):
     if len(watchlist_stocks) <= limit:
@@ -139,10 +145,14 @@ def trading_bot():
     log_info("Prepare portfolio stocks for AI analysis...")
     portfolio_overview = {}
     for symbol, stock_data in portfolio_stocks.items():
+        historical_data_day = get_historical_data(symbol, interval="5minute", span="day")
+        historical_data_year = get_historical_data(symbol, interval="day", span="year")
+        ratings_data = get_ratings(symbol)
         portfolio_overview[symbol] = extract_my_stocks_data(stock_data)
-        portfolio_overview[symbol] = enrich_with_rsi(portfolio_overview[symbol], symbol)
-        portfolio_overview[symbol] = enrich_with_moving_averages(portfolio_overview[symbol], symbol)
-        portfolio_overview[symbol] = enrich_with_analyst_ratings(portfolio_overview[symbol], symbol)
+        portfolio_overview[symbol] = enrich_with_rsi(portfolio_overview[symbol], historical_data_day, symbol)
+        portfolio_overview[symbol] = enrich_with_vwap(portfolio_overview[symbol], historical_data_day, symbol)
+        portfolio_overview[symbol] = enrich_with_moving_averages(portfolio_overview[symbol], historical_data_year, symbol)
+        portfolio_overview[symbol] = enrich_with_analyst_ratings(portfolio_overview[symbol], ratings_data)
 
     log_info("Getting watchlist stocks...")
     watchlist_stocks = []
@@ -168,10 +178,14 @@ def trading_bot():
         log_info("Prepare watchlist overview for AI analysis...")
         for stock_data in watchlist_stocks:
             symbol = stock_data['symbol']
+            historical_data_day = get_historical_data(symbol, interval="5minute", span="day")
+            historical_data_year = get_historical_data(symbol, interval="day", span="year")
+            ratings_data = get_ratings(symbol)
             watchlist_overview[symbol] = extract_watchlist_data(stock_data)
-            watchlist_overview[symbol] = enrich_with_rsi(watchlist_overview[symbol], symbol)
-            watchlist_overview[symbol] = enrich_with_moving_averages(watchlist_overview[symbol], symbol)
-            watchlist_overview[symbol] = enrich_with_analyst_ratings(watchlist_overview[symbol], symbol)
+            watchlist_overview[symbol] = enrich_with_rsi(watchlist_overview[symbol], historical_data_day, symbol)
+            watchlist_overview[symbol] = enrich_with_vwap(watchlist_overview[symbol], historical_data_day, symbol)
+            watchlist_overview[symbol] = enrich_with_moving_averages(watchlist_overview[symbol], historical_data_year, symbol)
+            watchlist_overview[symbol] = enrich_with_analyst_ratings(watchlist_overview[symbol], ratings_data)
 
     if len(portfolio_overview) == 0 and len(watchlist_overview) == 0:
         log_warning("No stocks to analyze, skipping AI-based decision-making...")
@@ -187,68 +201,72 @@ def trading_bot():
     except Exception as e:
         log_error(f"Error making AI-based decision: {e}")
 
+    log_info("Filtering AI hallucinations...")
+    decisions_data = filter_ai_hallucinations(decisions_data)
 
-    while len(decisions_data) > 0:
-        log_debug(f"Total decisions: {len(decisions_data)}")
-        log_debug(f"Decisions:{chr(10)}{json.dumps(decisions_data, indent=1)}")
+    if len(decisions_data) == 0:
+        log_info("No decisions to execute")
+        return trading_results
 
-        log_info("Executing decisions...")
-        for decision_data in decisions_data:
-            symbol = decision_data['symbol']
-            decision = decision_data['decision']
-            quantity = decision_data['quantity']
-            log_info(f"{symbol} > Decision: {decision} of {quantity}")
+    log_info("Executing decisions...")
 
-            if symbol in TRADE_EXCEPTIONS:
-                trading_results[symbol] = {"symbol": symbol, "quantity": quantity, "decision": decision, "result": "error", "details": "Trade exception"}
-                log_warning(f"{symbol} > Decision skipped due to trade exception")
-                continue
+    for decision_data in decisions_data:
+        symbol = decision_data['symbol']
+        decision = decision_data['decision']
+        quantity = decision_data['quantity']
+        log_info(f"{symbol} > Decision: {decision} of {quantity}")
 
-            if decision == "sell":
-                try:
-                    sell_resp = sell_stock(symbol, quantity)
-                    if sell_resp and 'id' in sell_resp:
-                        if sell_resp['id'] == "demo":
-                            trading_results[symbol] = {"symbol": symbol, "quantity": quantity, "decision": "sell", "result": "success", "details": "Demo mode"}
-                            log_info(f"{symbol} > Demo > Sold {quantity} stocks")
-                        elif sell_resp['id'] == "cancelled":
-                            trading_results[symbol] = {"symbol": symbol, "quantity": quantity, "decision": "sell", "result": "cancelled", "details": "Cancelled by user"}
-                            log_info(f"{symbol} > Sell cancelled by user")
-                        else:
-                            details = extract_sell_response_data(sell_resp)
-                            trading_results[symbol] = {"symbol": symbol, "quantity": quantity, "decision": "sell", "result": "success", "details": details}
-                            log_trade_to_db(symbol, "sell", quantity)
-                            log_info(f"{symbol} > Sold {quantity} stocks")
+        # TODO: Move to filter_ai_hallucinations function
+        if symbol in TRADE_EXCEPTIONS:
+            trading_results[symbol] = {"symbol": symbol, "quantity": quantity, "decision": decision, "result": "error", "details": "Trade exception"}
+            log_warning(f"{symbol} > Decision skipped due to trade exception")
+            continue
+
+        if decision == "sell":
+            try:
+                sell_resp = sell_stock(symbol, quantity)
+                if sell_resp and 'id' in sell_resp:
+                    if sell_resp['id'] == "demo":
+                        trading_results[symbol] = {"symbol": symbol, "quantity": quantity, "decision": "sell", "result": "success", "details": "Demo mode"}
+                        log_info(f"{symbol} > Demo > Sold {quantity} stocks")
+                    elif sell_resp['id'] == "cancelled":
+                        trading_results[symbol] = {"symbol": symbol, "quantity": quantity, "decision": "sell", "result": "cancelled", "details": "Cancelled by user"}
+                        log_info(f"{symbol} > Sell cancelled by user")
                     else:
-                        details = sell_resp['detail'] if 'detail' in sell_resp else sell_resp
-                        trading_results[symbol] = {"symbol": symbol, "quantity": quantity, "decision": "sell", "result": "error", "details": details}
-                        log_error(f"{symbol} > Error selling: {details}")
-                except Exception as e:
-                    trading_results[symbol] = {"symbol": symbol, "quantity": quantity, "decision": "sell", "result": "error", "details": str(e)}
-                    log_error(f"{symbol} > Error selling: {e}")
+                        details = extract_sell_response_data(sell_resp)
+                        trading_results[symbol] = {"symbol": symbol, "quantity": quantity, "decision": "sell", "result": "success", "details": details}
+                        log_trade_to_db(symbol, "sell", quantity)
+                        log_info(f"{symbol} > Sold {quantity} stocks")
+                else:
+                    details = sell_resp['detail'] if 'detail' in sell_resp else sell_resp
+                    trading_results[symbol] = {"symbol": symbol, "quantity": quantity, "decision": "sell", "result": "error", "details": details}
+                    log_error(f"{symbol} > Error selling: {details}")
+            except Exception as e:
+                trading_results[symbol] = {"symbol": symbol, "quantity": quantity, "decision": "sell", "result": "error", "details": str(e)}
+                log_error(f"{symbol} > Error selling: {e}")
 
-            if decision == "buy":
-                try:
-                    buy_resp = buy_stock(symbol, quantity)
-                    if buy_resp and 'id' in buy_resp:
-                        if buy_resp['id'] == "demo":
-                            trading_results[symbol] = {"symbol": symbol, "quantity": quantity, "decision": "buy", "result": "success", "details": "Demo mode"}
-                            log_info(f"{symbol} > Demo > Bought {quantity} stocks")
-                        elif buy_resp['id'] == "cancelled":
-                            trading_results[symbol] = {"symbol": symbol, "quantity": quantity, "decision": "buy", "result": "cancelled", "details": "Cancelled by user"}
-                            log_info(f"{symbol} > Buy cancelled by user")
-                        else:
-                            details = extract_buy_response_data(buy_resp)
-                            trading_results[symbol] = {"symbol": symbol, "quantity": quantity, "decision": "buy", "result": "success", "details": details}
-                            log_trade_to_db(symbol, "buy", quantity)
-                            log_info(f"{symbol} > Bought {quantity} stocks")
+        if decision == "buy":
+            try:
+                buy_resp = buy_stock(symbol, quantity)
+                if buy_resp and 'id' in buy_resp:
+                    if buy_resp['id'] == "demo":
+                        trading_results[symbol] = {"symbol": symbol, "quantity": quantity, "decision": "buy", "result": "success", "details": "Demo mode"}
+                        log_info(f"{symbol} > Demo > Bought {quantity} stocks")
+                    elif buy_resp['id'] == "cancelled":
+                        trading_results[symbol] = {"symbol": symbol, "quantity": quantity, "decision": "buy", "result": "cancelled", "details": "Cancelled by user"}
+                        log_info(f"{symbol} > Buy cancelled by user")
                     else:
-                        details = buy_resp['detail'] if 'detail' in buy_resp else buy_resp
-                        trading_results[symbol] = {"symbol": symbol, "quantity": quantity, "decision": "buy", "result": "error", "details": details}
-                        log_error(f"{symbol} > Error buying: {details}")
-                except Exception as e:
-                    trading_results[symbol] = {"symbol": symbol, "quantity": quantity, "decision": "buy", "result": "error", "details": str(e)}
-                    log_error(f"{symbol} > Error buying: {e}")
+                        details = extract_buy_response_data(buy_resp)
+                        trading_results[symbol] = {"symbol": symbol, "quantity": quantity, "decision": "buy", "result": "success", "details": details}
+                        log_trade_to_db(symbol, "buy", quantity)
+                        log_info(f"{symbol} > Bought {quantity} stocks")
+                else:
+                    details = buy_resp['detail'] if 'detail' in buy_resp else buy_resp
+                    trading_results[symbol] = {"symbol": symbol, "quantity": quantity, "decision": "buy", "result": "error", "details": details}
+                    log_error(f"{symbol} > Error buying: {details}")
+            except Exception as e:
+                trading_results[symbol] = {"symbol": symbol, "quantity": quantity, "decision": "buy", "result": "error", "details": str(e)}
+                log_error(f"{symbol} > Error buying: {e}")
 
     return trading_results
 

@@ -151,7 +151,7 @@ def trading_bot():
         portfolio_overview[symbol] = enrich_with_rsi(portfolio_overview[symbol], historical_data_day, symbol)
         portfolio_overview[symbol] = enrich_with_vwap(portfolio_overview[symbol], historical_data_day, symbol)
         portfolio_overview[symbol] = enrich_with_moving_averages(portfolio_overview[symbol], historical_data_year, symbol)
-        portfolio_overview[symbol] = enrich_with_analyst_ratings(portfolio_overview[symbol], ratings_data)
+        portfolio_overview[symbol] = enrich_with_analyst_ratings(portfolio_overview[symbol], ratings_data, symbol)
 
     log_info("Getting watchlist stocks...")
     watchlist_stocks = []
@@ -184,7 +184,7 @@ def trading_bot():
             watchlist_overview[symbol] = enrich_with_rsi(watchlist_overview[symbol], historical_data_day, symbol)
             watchlist_overview[symbol] = enrich_with_vwap(watchlist_overview[symbol], historical_data_day, symbol)
             watchlist_overview[symbol] = enrich_with_moving_averages(watchlist_overview[symbol], historical_data_year, symbol)
-            watchlist_overview[symbol] = enrich_with_analyst_ratings(watchlist_overview[symbol], ratings_data)
+            watchlist_overview[symbol] = enrich_with_analyst_ratings(watchlist_overview[symbol], ratings_data, symbol)
 
     if len(portfolio_overview) == 0 and len(watchlist_overview) == 0:
         log_warning("No stocks to analyze, skipping AI-based decision-making...")

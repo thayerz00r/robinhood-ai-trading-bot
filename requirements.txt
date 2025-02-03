@@ -1,0 +1,4 @@
+robin_stocks
+openai
+onepassword
+pandas

@@ -24,8 +24,6 @@ MIN_SELLING_AMOUNT_USD = 1.0                # Minimum sell amount in USD (False 
 MAX_SELLING_AMOUNT_USD = 10.0               # Maximum sell amount in USD (False - disable setting)
 MIN_BUYING_AMOUNT_USD = 1.0                 # Minimum buy amount in USD (False - disable setting)
 MAX_BUYING_AMOUNT_USD = 10.0                # Maximum buy amount in USD (False - disable setting)
-PDT_PROTECTION = False                      # [Beta] Pattern day trader protection (False - disable protection). See: https://robinhood.com/us/en/support/articles/pattern-day-trade-protection/
 
 # OpenAI config params
 OPENAI_MODEL_NAME = "gpt-4o-mini"           # OpenAI model name
-MAX_POST_DECISIONS_ADJUSTMENTS = False      # [Beta] Maximum number of adjustments to make (False - disable adjustments)

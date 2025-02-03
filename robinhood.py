@@ -79,26 +79,21 @@ def round_quantity(quantity, decimals=6):
     return round(float(quantity), decimals)
 
 
-# Calculate moving averages for stock prices
-def calculate_moving_averages(prices, short_window=50, long_window=200):
-    short_mavg = pd.Series(prices).rolling(window=short_window).mean().iloc[-1]
-    long_mavg = pd.Series(prices).rolling(window=long_window).mean().iloc[-1]
-    return short_mavg, long_mavg
-
-
 # Extract data from my stocks
 def extract_my_stocks_data(stock_data):
     return {
-        "price": round_money(stock_data['price']),
-        "quantity": round_quantity(stock_data['quantity']),
-        "average_buy_price": round_money(stock_data['average_buy_price']),
+        "current_price": round_money(stock_data['price']),
+        "my_quantity": round_quantity(stock_data['quantity']),
+        "my_average_buy_price": round_money(stock_data['average_buy_price']),
     }
 
 
 # Extract data from watchlist stocks
 def extract_watchlist_data(stock_data):
     return {
-        "price": round_money(stock_data['price']),
+        "current_price": round_money(stock_data['price']),
+        "my_quantity": round_quantity(0),
+        "my_average_buy_price": round_money(0),
     }
 
 
@@ -118,34 +113,81 @@ def extract_buy_response_data(buy_resp):
     }
 
 
-# Enrich stock data with moving averages
-def enrich_with_moving_averages(stock_data, symbol):
-    prices = get_historical_data(symbol)
-    if len(prices) >= 200:
-        moving_avg_50, moving_avg_200 = calculate_moving_averages(prices)
-        stock_data["50_day_mavg_price"] = round_money(moving_avg_50)
-        stock_data["200_day_mavg_price"] = round_money(moving_avg_200)
+# Enrich stock data with Relative strength index (RSI)
+def enrich_with_rsi(stock_data, historical_data, symbol):
+    if len(historical_data) < 14:
+        log_debug(f"Not enough data to calculate RSI for {symbol}")
+        return stock_data
+
+    prices = [round_money(day['close_price']) for day in historical_data]
+    delta = pd.Series(prices).diff()
+    gain = delta.where(delta > 0, 0)
+    loss = -delta.where(delta < 0, 0)
+    avg_gain = gain.rolling(window=14).mean().iloc[-1]
+    avg_loss = loss.rolling(window=14).mean().iloc[-1]
+    if avg_loss == 0:
+        rs = 100
+    else:
+        rs = avg_gain / avg_loss
+    rsi = 100 - (100 / (1 + rs))
+    stock_data["rsi"] = round(float(rsi), 2)
+    return stock_data
+
+
+# Enrich stock data with Volume-weighted average price (VWAP)
+def enrich_with_vwap(stock_data, historical_data, symbol):
+    if len(historical_data) < 1:
+        log_debug(f"Not enough data to calculate VWAP for {symbol}")
+        return stock_data
+
+    stock_history_df = pd.DataFrame(historical_data)
+    stock_history_df["close_price"] = pd.to_numeric(stock_history_df["close_price"], errors="coerce")
+    stock_history_df["high_price"] = pd.to_numeric(stock_history_df["high_price"], errors="coerce")
+    stock_history_df["low_price"] = pd.to_numeric(stock_history_df["low_price"], errors="coerce")
+    stock_history_df["volume"] = pd.to_numeric(stock_history_df["volume"], errors="coerce")
+
+    # Drop rows where volume is zero or NaN
+    stock_history_df = stock_history_df[stock_history_df["volume"] > 0]
+
+    # Compute the Typical Price
+    stock_history_df["typical_price"] = (stock_history_df["high_price"] + stock_history_df["low_price"] + stock_history_df["close_price"]) / 3
+
+    # Compute VWAP
+    sum_of_volumes = stock_history_df["volume"].sum()
+    dot_product = stock_history_df["volume"].dot(stock_history_df["typical_price"])
+
+    if sum_of_volumes == 0:  # Prevent division by zero
+        log_debug(f"Total volume is zero for {symbol}, cannot compute VWAP")
+        return stock_data
+
+    vwap = dot_product / sum_of_volumes
+    stock_data["vwap"] = round_money(vwap)
+
+    return stock_data
+
+
+# Enrich stock data with Moving average (MA)
+def enrich_with_moving_averages(stock_data, historical_data, symbol):
+    if len(historical_data) < 200:
+        log_debug(f"Not enough data to calculate moving averages for {symbol}")
+        return stock_data
+
+    prices = [round_money(day['close_price']) for day in historical_data]
+    moving_avg_50 = pd.Series(prices).rolling(window=50).mean().iloc[-1]
+    moving_avg_200 = pd.Series(prices).rolling(window=200).mean().iloc[-1]
+    stock_data["50_day_mavg_price"] = round_money(moving_avg_50)
+    stock_data["200_day_mavg_price"] = round_money(moving_avg_200)
     return stock_data
 
 
 # Get analyst ratings for a stock by symbol
-def enrich_with_analyst_ratings(stock_data, symbol):
-    ratings = get_ratings(symbol)
-    if 'ratings' in ratings and len(ratings['ratings']) > 0:
-        last_sell_rating = next((rating for rating in ratings['ratings'] if rating['type'] == "sell"), None)
-        last_buy_rating = next((rating for rating in ratings['ratings'] if rating['type'] == "buy"), None)
-        if last_sell_rating:
-            stock_data["analyst_sell_opinion"] = last_sell_rating['text'].decode('utf-8')
-        if last_buy_rating:
-            stock_data["analyst_buy_opinion"] = last_buy_rating['text'].decode('utf-8')
-    if 'summary' in ratings and ratings['summary']:
-        summary = ratings['summary']
-        total_ratings = sum([summary['num_buy_ratings'], summary['num_hold_ratings'], summary['num_sell_ratings']])
-        if total_ratings > 0:
-            buy_percent = summary['num_buy_ratings'] / total_ratings * 100
-            sell_percent = summary['num_sell_ratings'] / total_ratings * 100
-            hold_percent = summary['num_hold_ratings'] / total_ratings * 100
-            stock_data["analyst_summary_distribution"] = f"sell: {sell_percent:.0f}%, buy: {buy_percent:.0f}%, hold: {hold_percent:.0f}%"
+def enrich_with_analyst_ratings(stock_data, ratings_data, symbol):
+    stock_data["analyst_summary"] = ratings_data['summary']
+    stock_data["analyst_ratings"] = list(map(lambda rating: {
+        "published_at": rating['published_at'],
+        "type": rating['type'],
+        "text": rating['text'].decode('utf-8'),
+    }, ratings_data['ratings']))
     return stock_data
 
 
@@ -186,7 +228,7 @@ def get_historical_data(symbol, interval="day", span="year"):
     resp = rh_run_with_retries(rh.stocks.get_stock_historicals, symbol, interval=interval, span=span)
     if resp is None:
         raise Exception(f"Error getting historical data for {symbol}: No response")
-    return [round_money(day['close_price']) for day in resp]
+    return resp
 
 
 # Sell a stock by symbol and quantity

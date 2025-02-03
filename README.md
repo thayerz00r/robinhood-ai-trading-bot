@@ -1,134 +1,184 @@
+# Robinhood AI Trading Bot
+
 <img src="images/avatar.png" width="277" alt="Robinhood AI Trading Bot"/>
 
+## ⚡ Overview
+The **Robinhood AI Trading Bot** is a simple Python script
+that combines **OpenAI's intelligence** with **Robinhood's trading capabilities**
+to help automate and optimize stock trading decisions.
+By analyzing **Relative Strength Index (RSI)**, **Volume-Weighted Average Price (VWAP)**,
+**Moving Averages**, and **Robinhood analyst ratings**, the bot generates buy, sell,
+and hold recommendations — executing trades automatically based on your selected mode.
 
-# Robinhood AI Trading Bot
-## ⚡ TL;DR
-Once you've added your OpenAI API Key and Robinhood credentials, and run this bot in "Auto" mode, it will analyze your portfolio stocks and some of your watchlist stocks (if available). 
-It calculates moving averages for these stocks, checks Robinhood analyst ratings (covering what "bulls" and "bears" say), feeds this data to OpenAI, and asks the AI to decide on actions for each stock (sell, buy, or hold, including amount). 
-It then directly executes all AI-made decisions.
+## 🤔 Why This Bot?
+This project is an experiment
+to explore how AI can enhance stock trading decisions — potentially outperforming human traders
+(or at least me, The Bot Father).
 
-So be smart — don’t run this bot in "Auto" mode right after your first test. 
-This involves real money, and there’s no cancel button! 
-Begin with "Demo" mode, which performs everything as in "Auto" mode except the actual sell and buy actions, which are just printed as if executed.
+## ⚠️ Important Considerations
+- **Start in Demo or Manual Mode** before enabling Auto Mode.
+- **Test thoroughly** to fine-tune AI decision-making.
+- **Monitor trade logs** to understand AI-driven actions.
 
-Then, try "Manual" mode, where the bot asks for confirmation before each sell or buy action.
+## 🛠 Features
+✅ **AI-Driven Trading** – Smart, data-backed buy/sell decisions.  
+✅ **Portfolio & Watchlist Integration** – Trade directly from your Robinhood stocks.  
+✅ **Configurable Strategy** – Set trading parameters to fit your risk profile.  
+✅ **Exclusion List** – Prevent trading specific stocks.  
+✅ **Logging & Analytics** – Track bot activity and trading history.  
+✅ **Workday Scheduling** – Align trading activity with market hours.
 
-P.S. I still run it in "Auto" mode, and, to be honest, I’m happy with the results so far.
+## 🚀 Getting Started
+1. **Connect Your Accounts**: Add your OpenAI API Key and Robinhood credentials.
+2. **Choose a Mode**:
+   - **Demo Mode**: Simulates trades without execution.
+   - **Manual Mode**: Requires confirmation before executing trades.
+   - **Auto Mode**: Executes trades automatically (recommended only after testing).
+3. **Monitor and Adjust**: Review trade logs and fine-tune settings for optimal performance.
 
+## 📊 How It Works
+1. **Authenticate**: Logs into OpenAI and Robinhood.
+2. **Fetch Data**: Retrieves stocks from your **portfolio** and **watchlist**.
+3. **Analyze Market Conditions**:
+   - **RSI**: Determines overbought/oversold conditions.
+   - **VWAP**: Identifies undervalued/overvalued stocks.
+   - **Moving Averages**: Evaluates price trends (50-day and 200-day).
+   - **Analyst Ratings**: Incorporates Robinhood’s expert opinions.
+4. **AI-Driven Decisions**: Uses OpenAI to generate trading recommendations.
+5. **Trade Execution**: Buys, sells, or holds stocks based on AI insights.
+6. **Continuous Monitoring**: Repeats analysis and trades as the market evolves.
 
-## 🌟 Fun Part
-Welcome to the Robinhood Trading Bot! This Python script pairs OpenAI's intelligence with Robinhood's trading power to help you automate and optimize your stock moves.
+## 📈 Analytical System
+### **Relative Strength Index (RSI)**
+- Measures momentum on a **0-100 scale**.
+- **Above 70**: Overbought (potential sell signal).
+- **Below 30**: Oversold (potential buy signal).
 
+### **Volume-Weighted Average Price (VWAP)**
+- Calculates the **average price** adjusted for volume.
+- **Above VWAP**: Overvalued (potential sell signal).
+- **Below VWAP**: Undervalued (potential buy signal).
 
-### Motivation
-This is a scientific experiment to see how AI can trade stocks better than humans (or at least me). 
+### **Moving Averages**
+- **50-day & 200-day moving averages** help detect trends.
+- **Golden Cross (50-day crosses above 200-day)**: Bullish signal.
+- **Death Cross (50-day crosses below 200-day)**: Bearish signal.
 
+### **Robinhood Analyst Ratings**
+- Aggregates **buy, hold, and sell** recommendations.
+- Provides sentiment analysis based on expert insights.
 
-### Features
-- **AI-Powered Trading**: Leverages OpenAI to provide smart, data-driven trading decisions.
-- **Post-Decision Adjustments (beta)**: Refines trading moves based on trade outcomes.
-- **Portfolio & Watchlist Integration**: Analyze and trade stocks from both your Robinhood portfolio and watchlist.
-- **Customizable Parameters**: Set trading limits and conditions to fit your strategy.
-- **Trading Exceptions**: Exclude specific stocks from trading.
-- **Pattern Day Trader Protection (beta)**: Avoids PDT restrictions by considering the number of day trades.
-- **Demo Mode**: Safely test trades without real execution.
-- **Manual Mode**: Approve each trade individually.
-- **Auto Mode**: Automate trades based on AI guidance.
-- **Workday Schedule**: Align bot activity with market hours.
-- **Logging**: Track bot activity and trade history in the console.
+## 🤖 AI-Powered Decision Making
+The bot formulates decisions using OpenAI based on:
+- RSI, VWAP, moving averages, and analyst ratings.
+- User-defined constraints (e.g., budget, stock exclusions, portfolio size).
 
-
-### How It Works
-1. **Login to OpenAI**: Authenticates using your OpenAI API key.
-2. **Login to Robinhood**: Logs into your Robinhood account with your credentials.
-3. **Fetch Portfolio Stocks**: Retrieves stocks from your portfolio.
-4. **Fetch Watchlist Stocks**: Retrieves a limited number of stocks from your watchlist, selecting randomly if needed to meet the limit.
-5. **Analyze Stock Prices and Ratings**: Calculates moving averages and includes Robinhood analyst ratings.
-6. **AI-Powered Decisions**: Sends stock data to OpenAI, receiving trading decisions (sell, buy, or hold) for each stock.
-7. **Execute Trades**: Executes initial trading decisions.
-8. **Post-Decision Adjustments**: Adjusts trades based on executed outcomes.
-9. **Execute Adjusted Trades**: Executes refined trading decisions.
-10. **Repeat**: Continues to analyze, trade, and adjust as market conditions evolve.
-
-
-#### Analyze Stock Prices and Ratings System
-The bot's analytical system incorporates moving averages and Robinhood analyst ratings to inform trading decisions:
-1. **Moving Averages**: The bot calculates moving averages (50-day and 200-day) for each stock to evaluate price trends and identify optimal buy and sell points.
-2. **Robinhood Analyst Ratings**: The bot fetches bullish and bearish ratings from Robinhood for each stock, providing additional insights into market sentiment and potential price movements.
-
-This is Robinhood's analyst rating system example:
-
-![Robinhood Analyst Ratings](images/robinhood_analyst_ratings.png)
-
-
-#### AI-Powered Decision-Making System
-The bot leverages OpenAI to make data-driven trading decisions based on the stock data:
-1. **Input Data**: The bot feeds the stock data (moving averages, analyst ratings) to OpenAI.
-2. **Output Data**: OpenAI provides trading decisions (sell, buy, or hold) for each stock.
-
-Decision-making AI-prompt example:  
+### **Example AI Prompt**:
 ``````
-**Decision-Making AI Prompt:**
-
 **Context:**
-You are an investment advisor managing a stock portfolio and watchlist. Every 600 seconds, you analyze market conditions to make informed investment decisions.
-
-**Task:**
-Analyze the provided portfolio and watchlist data to recommend:
-1. Stocks to sell, prioritizing those that maximize buying power and profit potential.
-2. Stocks to buy that align with available funds and current market conditions.
+Today is 2025-02-03T12:23:02Z.
+You are a short-term investment advisor managing a stock portfolio.
+You analyze market conditions every 3600 seconds and make investment decisions.
 
 **Constraints:**
-- Maintain a portfolio size of fewer than 10 stocks.
-- Total Buying Power: 3.96 USD initially.
-- Sell Amounts Guidelines: Minimum 1.0 USD, Maximum 300.0 USD
-- Buy Amounts Guidelines: Minimum 1.0 USD, Maximum 300.0 USD
-- Stocks under PDT Limit: NVDA, MSFT, SNAP, NWSA, ...
-- Trade Exceptions (exclude from trading in any decisions): AAPL, TSLA, AMZN, ...
+- Initial budget: 0.22 USD
+- Max portfolio size: 20 stocks
+- Excluded stocks: VOO, SPY, IVV
 
-**Portfolio Overview:**
+**Stock Data:**
 ```json
 {
  "AAPL": {
-  "price": 227.59,
-  "quantity": 0.564172,
-  "average_buy_price": 226.93,
-  "50_day_mavg_price": 226.88,
-  "200_day_mavg_price": 202.76,
-  "analyst_sell_opinion": "Regulators have a keen eye on Apple, and recent regulations have chipped away at parts of Apple\u2019s sticky ecosystem. ",
-  "analyst_buy_opinion": "Apple has a stellar balance sheet and sends great amounts of cash flow back to shareholders.",
-  "analyst_summary_distribution": "sell: 6%, buy: 67%, hold: 27%"
+  "current_price": 226.79,
+  "my_quantity": 0.0927,
+  "my_average_buy_price": 226.43,
+  "rsi": 40.47,
+  "vwap": 228.41,
+  "50_day_mavg_price": 240.23,
+  "200_day_mavg_price": 219.7,
+  "analyst_summary": {
+   "num_buy_ratings": 30,
+   "num_hold_ratings": 17,
+   "num_sell_ratings": 5
+  },
+  "analyst_ratings": [
+   {
+    "published_at": "2025-02-01T01:13:18Z",
+    "type": "sell",
+    "text": "Regulators have a keen eye on Apple, and recent regulations have chipped away at parts of Apple\u2019s sticky ecosystem. "
+   },
+   {
+    "published_at": "2025-02-01T01:13:18Z",
+    "type": "sell",
+    "text": "Apple\u2019s supply chain is highly concentrated in China and Taiwan, which opens up the firm to geopolitical risk. Attempts to diversify into other regions may pressure profitability or efficiency."
+   },
+   {
+    "published_at": "2025-02-01T01:13:18Z",
+    "type": "sell",
+    "text": "Apple is prone to consumer spending and preferences, which creates cyclicality and opens the firm up to disruption."
+   },
+   {
+    "published_at": "2025-02-01T01:13:18Z",
+    "type": "buy",
+    "text": "Apple has a stellar balance sheet and sends great amounts of cash flow back to shareholders."
+   },
+   {
+    "published_at": "2025-02-01T01:13:18Z",
+    "type": "buy",
+    "text": "We like Apple\u2019s move to in-house chip development, which we think has accelerated its product development and increased its differentiation. "
+   },
+   {
+    "published_at": "2025-02-01T01:13:18Z",
+    "type": "buy",
+    "text": "Apple offers an expansive ecosystem of tightly integrated hardware, software, and services, which locks in customers and generates strong profitability."
+   }
+  ]
  },
- "NVDA": {
-  "price": 147.13,
-  "quantity": 0.000302,
-  "average_buy_price": 147.19,
-  "50_day_mavg_price": 126.67,
-  "200_day_mavg_price": 106.37,
-  "analyst_sell_opinion": "Nvidia\u2019s gaming GPU business has often seen boom-or-bust cycles based on PC demand and, more recently, cryptocurrency mining.",
-  "analyst_buy_opinion": "The firm has a first-mover advantage in the autonomous driving market that could lead to widespread adoption of its Drive PX self-driving platform.",
-  "analyst_summary_distribution": "sell: 0%, buy: 92%, hold: 8%"
- },
- ...
-}
-```
-
-**Watchlist Overview:**
-```json
-{
- "TCEHY": {
-  "price": 53.05,
-  "50_day_mavg_price": 52.99,
-  "200_day_mavg_price": 45.76,
-  "analyst_sell_opinion": "The possibility of highly competitive foreign internet service providers reentering China over the next 10-20 years.",
-  "analyst_buy_opinion": "Compliance costs can rise to a point where they become significant barriers to entry to the Chinese internet industry.",
-  "analyst_summary_distribution": "sell: 3%, buy: 95%, hold: 2%"
- },
- "NSSC": {
-  "price": 39.1,
-  "50_day_mavg_price": 39.5,
-  "200_day_mavg_price": 44.88,
-  "analyst_summary_distribution": "sell: 0%, buy: 83%, hold: 17%"
+ "MSFT": {
+  "current_price": 411.67,
+  "my_quantity": 0.0509,
+  "my_average_buy_price": 412.57,
+  "rsi": 32.53,
+  "vwap": 411.85,
+  "50_day_mavg_price": 431.36,
+  "200_day_mavg_price": 425.73,
+  "analyst_summary": {
+   "num_buy_ratings": 57,
+   "num_hold_ratings": 3,
+   "num_sell_ratings": 0
+  },
+  "analyst_ratings": [
+   {
+    "published_at": "2025-02-01T01:14:52Z",
+    "type": "sell",
+    "text": "Microsoft is not the top player in its key sources of growth, notably Azure and Dynamics."
+   },
+   {
+    "published_at": "2025-02-01T01:14:52Z",
+    "type": "sell",
+    "text": "Microsoft lacks a meaningful mobile presence."
+   },
+   {
+    "published_at": "2025-02-01T01:14:52Z",
+    "type": "sell",
+    "text": "Momentum is slowing in the ongoing shift to subscriptions, particularly in Office, which is generally considered a mature product."
+   },
+   {
+    "published_at": "2025-02-01T01:14:52Z",
+    "type": "buy",
+    "text": "Microsoft has monopoly like positions in various areas (OS, Office) that serve as cash cows to help drive Azure growth."
+   },
+   {
+    "published_at": "2025-02-01T01:14:52Z",
+    "type": "buy",
+    "text": "Microsoft 365 continues to benefit from upselling into higher-priced stock-keeping units as customers are willing to pay up for better security and Teams Phone, which should continue over the next several years."
+   },
+   {
+    "published_at": "2025-02-01T01:14:52Z",
+    "type": "buy",
+    "text": "Public cloud is widely considered to be the future of enterprise computing, and Azure is a leading service that benefits the evolution to first to hybrid environments, and then ultimately to public cloud environments."
+   }
+  ]
  },
  ...
 }
@@ -138,13 +188,13 @@ Analyze the provided portfolio and watchlist data to recommend:
 Return your decisions in a JSON array with this structure:
 ```json
 [
-  {"symbol": "<symbol>", "decision": "<decision>", "quantity": <quantity>},
+  {"symbol": <symbol>, "decision": <decision>, "quantity": <quantity>},
   ...
 ]
 ```
-- `symbol`: Stock ticker symbol.
-- `decision`: One of `buy`, `sell`, or `hold`.
-- `quantity`: Recommended transaction quantity.
+- <symbol>: Stock symbol.
+- <decision>: One of `buy`, `sell`, or `hold`.
+- <quantity>: Recommended transaction quantity.
 
 **Instructions:**
 - Provide only the JSON output with no additional text.
@@ -161,84 +211,10 @@ AI-response example:
 ]
 ```
 
-
-#### AI-Powered Post-Decision Adjustments System
-The bot adjusts its trading decisions based on the outcomes of executed trades:
-1. **Input Data**: The bot feeds the executed trades data to OpenAI.
-2. **Output Data**: OpenAI provides adjustments to the trading decisions based on the trading results.
-
-Post-decision adjustments AI-prompt example:  
-``````
-**Post-Decision Adjustments AI Prompt:**
-
-**Context:**
-You are an investment advisor tasked with reviewing and adjusting prior trading decisions. Your goal is to optimize buying power and profit potential by analyzing trading results and making necessary changes.
-
-**Task:**
-1. Review previous trading outcomes and resolve any errors.
-2. Reorder and adjust sell decisions to enhance buying power.
-3. Update buy recommendations based on the newly available buying power.
-
-**Constraints:**
-- Maintain a portfolio size of fewer than 10 stocks.
-- Total Buying Power: 2.95 USD initially.
-- Sell Amounts Guidelines: Minimum amount 1.0 USD, Maximum amount 300.0 USD
-- Buy Amounts Guidelines: Minimum amount 1.0 USD, Maximum amount 300.0 USD
-- Stocks under PDT Limit: NVDA, MSFT, SNAP, NWSA, ...
-
-**Trading Results:**
-```json
-{
- "AAPL": {
-  "symbol": "AAPL",
-  "amount": 1.0,
-  "decision": "sell",
-  "result": "success",
-  "details": {
-   "quantity": 0.004394,
-   "price": null
-  }
- },
- "NVDA": {
-  "symbol": "NVDA",
-  "amount": 1.0,
-  "decision": "sell",
-  "result": "error",
-  "details": "Not enough shares to sell."
- },
- ...
-}
-```
-
-**Response Format:**
-Return your decisions in a JSON array with this structure:
-```json
-[
-  {"symbol": "<symbol>", "decision": "<decision>", "quantity": <quantity>},
-  ...
-]
-```
-- `symbol`: Stock ticker symbol.
-- `decision`: One of `buy`, `sell`, or `hold`.
-- `quantity`: Recommended transaction quantity.
-
-**Instructions:**
-- Provide only the JSON output with no additional text.
-- Return an empty array if no actions are necessary.
-``````
-
-AI-response example:
-```
-[
-    {"symbol": "AAPL", "decision": "sell", "quantity": 0.004394},
-    ...
-]
-```
-
-
-#### Logging System
+## 📝 Logging System
 The bot logs its activity and trading decisions in a console log.
-Log example:
+
+### **Example Log Output**:
 ```
 Are you sure you want to run the bot in auto mode? (yes/no): yes
 [2024-11-01 11:06:58] [INFO]    Market is open, running trading bot in auto mode...
@@ -258,16 +234,14 @@ Are you sure you want to run the bot in auto mode? (yes/no): yes
 [2024-11-01 11:07:23] [INFO]    VRT > Bought 2.09 stocks
 [2024-11-01 11:07:23] [INFO]    SNAP > Decision: hold of 0.0323
 [2024-11-01 11:07:23] [INFO]    VIAV > Decision: hold of 0.0212
-[2024-11-01 11:07:23] [INFO]    Making AI-based post-decision analysis, attempt: 1/2...
 [2024-11-01 11:07:24] [INFO]    Stocks sold: NVDA (2.0)
 [2024-11-01 11:07:24] [INFO]    Stocks bought: VRT (2.09)
 [2024-11-01 11:07:24] [INFO]    Errors: MSFT (Not enough shares to sell.)
 [2024-11-01 11:07:24] [INFO]    Waiting for 600 seconds...
 ```
 
-
-## 🥱 Boring Part
-### Install
+## 🛠️ Setup Guide
+### Installation
 1. Clone the repository:
     ```sh
     git clone https://github.com/siropkin/robinhood-ai-trading-bot.git
@@ -276,17 +250,17 @@ Are you sure you want to run the bot in auto mode? (yes/no): yes
 
 2. Install dependencies:
     ```sh
-    pip install robin_stocks openai onepassword pandas
+    pip install -r requirements.txt
     ```
 
 
-### Config
-Clone `config.py.example` to `config.py` and fill in the required parameters:
+### Configuration
+Copy the example config and update it with your details::
    ```sh
    cp config.py.example config.py
    ```
 
-Configuration parameters:
+Fill in config.py with the required parameters:
 ```python
 # 1Password Credentials
 OP_SERVICE_ACCOUNT_NAME = "..."             # 1Password service account name (for Robinhood MFA secret)
@@ -314,21 +288,15 @@ MIN_SELLING_AMOUNT_USD = 1.0                # Minimum sell amount in USD (False 
 MAX_SELLING_AMOUNT_USD = 10.0               # Maximum sell amount in USD (False - disable setting)
 MIN_BUYING_AMOUNT_USD = 1.0                 # Minimum buy amount in USD (False - disable setting)
 MAX_BUYING_AMOUNT_USD = 10.0                # Maximum buy amount in USD (False - disable setting)
-PDT_PROTECTION = False                      # [Beta] Pattern day trader protection (False - disable protection). See: https://robinhood.com/us/en/support/articles/pattern-day-trade-protection/
 
 # OpenAI config params
 OPENAI_MODEL_NAME = "gpt-4o-mini"           # OpenAI model name
-MAX_POST_DECISIONS_ADJUSTMENTS = False      # Maximum number of adjustments to make (False - disable adjustments)
 ```
 
+#### Robinhood MFA Setup
+If MFA is enabled, you'll need to provide an MFA code. There are two options:
 
-#### Robinhood MFA Secret
-If you have Multi-Factor Authentication (MFA) enabled on your Robinhood account, you will need to provide the MFA code.
-This can be done in one of two ways:
-1. Directly setting the `ROBINHOOD_MFA_SECRET` environment variable.
-2. Or using 1Password credentials to retrieve the code.
-
-##### Using ROBINHOOD_MFA_SECRET (Generate MFA Code Locally)
+##### Option 1: Use `ROBINHOOD_MFA_SECRET` (Local MFA Code)
 If you prefer to set the MFA secret directly, follow these steps:
 1. Log in to your Robinhood account on your phone. Important to use your phone because it will display the secret key but not the QR code.
 2. Navigate to the security settings.
@@ -337,7 +305,7 @@ If you prefer to set the MFA secret directly, follow these steps:
 5. Enter the same secret key into your authentication app on the same PC where you run the script (e.g., Google Authenticator). Note: If you enter the secret on a different device, it will generate a different value.
 6. After entering the same secret on the same PC, use the generated TOTP number to authenticate with the Robinhood app.
 
-##### Using 1Password (Retrieve MFA Code)
+##### Option 2: Use 1Password (Auto MFA Retrieval)
 If you do not set the `ROBINHOOD_MFA_SECRET` environment variable, the script will attempt to retrieve the MFA secret from 1Password using the following credentials:
 ```python
 # 1Password Credentials
@@ -354,27 +322,27 @@ To use this feature:
 
 For more information on setting up 1Password Service Accounts, read the guide: [Get started with 1Password Service Accounts](https://developer.1password.com/docs/service-accounts/get-started/)
 
-
-### Run
-To start the bot, run the following command in your terminal:
+### Running the Bot
+Start the bot with:
    ```sh
    python main.py
    ```
 
-
 ## ⚠️ Disclaimer
-This bot is for educational purposes only. Trading stocks involves risk, and you should only trade with money you can afford to lose. The author is not responsible for any financial losses you may incur.
-
+Please note: This bot is designed solely for educational purposes.
+Trading stocks involves significant risks, and you should only invest money you can afford to lose.
+The author is not liable for any financial losses incurred through the use of this bot.
 
 ## 📄 License
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
-
 ## 🤝 Contributing
-I'm genuinely excited to welcome contributors! 
-Whether you're interested in refining the logging system, enhancing AI-prompt strategies, or enriching stock data — there’s room for your ideas and expertise. 
-Feel free to submit pull requests or open issues with suggestions and improvements!
-
+Contributions are highly encouraged and welcomed!
+Whether you’re looking to enhance the logging system, optimize AI-prompt strategies,
+or enrich stock data — there’s always room for fresh ideas and improvements.
+Feel free to submit pull requests or open issues to share your suggestions and expertise!
 
 ## 📧 Contact
-If you have any questions or feedback, feel free to reach out at [goodbotty@proton.me](mailto:goodbotty@proton.me).
+Got questions, feedback, or just want to chat?
+Reach out via email at [goodbotty@proton.me](mailto:goodbotty@proton.me).
+I'm always happy to hear from you!

@@ -1,10 +1,12 @@
 import robin_stocks.robinhood as rh
 import time
+from datetime import datetime
 from pytz import timezone
 import pandas as pd
 
-import mfa
-from log import *
+from . import onepassword
+from ..utils import auth
+from ..utils import logger
 from config import MODE, ROBINHOOD_USERNAME, ROBINHOOD_PASSWORD
 from config import OP_SERVICE_ACCOUNT_NAME, OP_SERVICE_ACCOUNT_TOKEN, OP_VAULT_NAME, OP_ITEM_NAME
 
@@ -13,30 +15,30 @@ from config import OP_SERVICE_ACCOUNT_NAME, OP_SERVICE_ACCOUNT_TOKEN, OP_VAULT_N
 async def login_to_robinhood():
     try:
         # Try to get MFA code from secret first
-        mfa_code = mfa.get_from_secret()
+        mfa_code = auth.get_mfa_code_from_secret()
 
         # If no MFA secret, try 1Password
         if not mfa_code and OP_SERVICE_ACCOUNT_NAME and OP_SERVICE_ACCOUNT_TOKEN and OP_VAULT_NAME and OP_ITEM_NAME:
-            mfa_code = await mfa.get_from_1password()
+            mfa_code = await onepassword.get_mfa_code_from_1password()
 
         try:
             if mfa_code:
-                log_debug("Attempting to login to Robinhood with MFA...")
+                logger.debug("Attempting to login to Robinhood with MFA...")
                 login_resp = rh.login(ROBINHOOD_USERNAME, ROBINHOOD_PASSWORD, mfa_code=mfa_code)
-                log_debug("Robinhood login successful with MFA.")
+                logger.debug("Robinhood login successful with MFA.")
             else:
-                log_debug("Attempting to login to Robinhood without MFA...")
+                logger.debug("Attempting to login to Robinhood without MFA...")
                 login_resp = rh.login(ROBINHOOD_USERNAME, ROBINHOOD_PASSWORD)
-                log_debug("Robinhood login successful without MFA.")
+                logger.debug("Robinhood login successful without MFA.")
             if not login_resp:
                 raise Exception("Login failed - no response received")
             return login_resp
         except Exception as e:
-            log_error(f"Failed to login to Robinhood: {e}")
+            logger.error(f"Failed to login to Robinhood: {e}")
             return None
 
     except Exception as e:
-        log_error(f"An error occurred during Robinhood login: {e}")
+        logger.error(f"An error occurred during Robinhood login: {e}")
         return None
 
 
@@ -46,10 +48,10 @@ def rh_run_with_retries(func, *args, max_retries=3, delay=60, **kwargs):
         result = func(*args, **kwargs)
         msg = f"Function: {func.__name__}, Parameters: {args}, Attempt: {attempt + 1}/{max_retries}, Result: {result}"
         msg = msg[:1000] + '...' if len(msg) > 1000 else msg
-        log_debug(msg)
+        logger.debug(msg)
         if result is not None:
             return result
-        log_debug(f"Function: {func.__name__}, Parameters: {args}, Retrying in {delay} seconds...")
+        logger.debug(f"Function: {func.__name__}, Parameters: {args}, Retrying in {delay} seconds...")
         time.sleep(delay)
     return None
 
@@ -116,7 +118,7 @@ def extract_buy_response_data(buy_resp):
 # Enrich stock data with Relative strength index (RSI)
 def enrich_with_rsi(stock_data, historical_data, symbol):
     if len(historical_data) < 14:
-        log_debug(f"Not enough data to calculate RSI for {symbol}")
+        logger.debug(f"Not enough data to calculate RSI for {symbol}")
         return stock_data
 
     prices = [round_money(day['close_price']) for day in historical_data]
@@ -137,7 +139,7 @@ def enrich_with_rsi(stock_data, historical_data, symbol):
 # Enrich stock data with Volume-weighted average price (VWAP)
 def enrich_with_vwap(stock_data, historical_data, symbol):
     if len(historical_data) < 1:
-        log_debug(f"Not enough data to calculate VWAP for {symbol}")
+        logger.debug(f"Not enough data to calculate VWAP for {symbol}")
         return stock_data
 
     stock_history_df = pd.DataFrame(historical_data)
@@ -157,7 +159,7 @@ def enrich_with_vwap(stock_data, historical_data, symbol):
     dot_product = stock_history_df["volume"].dot(stock_history_df["typical_price"])
 
     if sum_of_volumes == 0:  # Prevent division by zero
-        log_debug(f"Total volume is zero for {symbol}, cannot compute VWAP")
+        logger.debug(f"Total volume is zero for {symbol}, cannot compute VWAP")
         return stock_data
 
     vwap = dot_product / sum_of_volumes
@@ -169,7 +171,7 @@ def enrich_with_vwap(stock_data, historical_data, symbol):
 # Enrich stock data with Moving average (MA)
 def enrich_with_moving_averages(stock_data, historical_data, symbol):
     if len(historical_data) < 200:
-        log_debug(f"Not enough data to calculate moving averages for {symbol}")
+        logger.debug(f"Not enough data to calculate moving averages for {symbol}")
         return stock_data
 
     prices = [round_money(day['close_price']) for day in historical_data]
@@ -291,4 +293,5 @@ def buy_stock(symbol, quantity):
     if buy_resp is None:
         raise Exception(f"Error buying {symbol}: No response")
     return buy_resp
+
 

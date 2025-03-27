@@ -1,4 +1,5 @@
 import robin_stocks.robinhood as rh
+import robin_stocks.urls as rh_urls
 import time
 from datetime import datetime
 from pytz import timezone
@@ -10,6 +11,7 @@ from ..utils import logger
 from config import MODE, ROBINHOOD_USERNAME, ROBINHOOD_PASSWORD
 from config import OP_SERVICE_ACCOUNT_NAME, OP_SERVICE_ACCOUNT_TOKEN, OP_VAULT_NAME, OP_ITEM_NAME
 
+account_info = {}
 
 # Main login function that orchestrates the login process
 async def login_to_robinhood():
@@ -182,8 +184,8 @@ def enrich_with_moving_averages(stock_data, historical_data, symbol):
     return stock_data
 
 
-# Get analyst ratings for a stock by symbol
-def enrich_with_analyst_ratings(stock_data, ratings_data, symbol):
+# Enrich stock data with Analyst ratings
+def enrich_with_analyst_ratings(stock_data, ratings_data):
     stock_data["analyst_summary"] = ratings_data['summary']
     stock_data["analyst_ratings"] = list(map(lambda rating: {
         "published_at": rating['published_at'],
@@ -193,43 +195,37 @@ def enrich_with_analyst_ratings(stock_data, ratings_data, symbol):
     return stock_data
 
 
+# Get PDT restrictions for a stock by symbol
+def get_stock_day_trade_checks(symbol):
+    stock_id = rh_run_with_retries(rh.helper.id_for_stock, symbol)
+    url = account_info["url"] + 'day_trade_checks'
+    params = {
+        "instrument": rh_urls.instruments() + stock_id + "/"
+    }
+    resp = rh_run_with_retries(rh.request_get, url, payload=params)
+    return resp
+
+
+# Enrich stock data with PDT restrictions
+def enrich_with_pdt_restrictions(stock_data, symbol):
+    day_trade_checks = get_stock_day_trade_checks(symbol)
+    if day_trade_checks is None:
+        return stock_data
+
+    stock_data["is_buy_pdt_restricted"] = day_trade_checks['buy'] is not None or day_trade_checks['buy_extended'] is not None
+    stock_data["is_sell_pdt_restricted"] = day_trade_checks['sell'] is not None or day_trade_checks['sell_extended'] is not None
+    return stock_data
+
+
 # Get my buying power and account info
 def get_account_info():
     resp = rh_run_with_retries(rh.profiles.load_account_profile)
     if resp is None:
         raise Exception("Error getting profile data: No response")
 
-    margin_balances = resp.get('margin_balances', {})
-    day_trade_buying_power = float(margin_balances.get('day_trade_buying_power', 0))
-    day_trade_ratio = float(margin_balances.get('day_trade_ratio', 0))
-    day_trades_protection = margin_balances.get('day_trades_protection', False)
-    is_pdt_forever = margin_balances.get('is_pdt_forever', False)
-    marked_pattern_day_trader_date = margin_balances.get('marked_pattern_day_trader_date')
-    pattern_day_trader_expiry_date = margin_balances.get('pattern_day_trader_expiry_date')
-
-    # Account is PDT restricted if:
-    # 1. It's permanently marked as PDT
-    # 2. It has PDT protection enabled and no day trade buying power
-    # 3. It's marked as PDT and hasn't expired yet
-    is_pdt_restricted = (
-        is_pdt_forever or
-        (day_trades_protection and day_trade_buying_power <= 0) or
-        (marked_pattern_day_trader_date and not pattern_day_trader_expiry_date)
-    )
-
-    return {
-        "buying_power": round_money(resp['buying_power']),
-        "day_trade_buying_power": round_money(day_trade_buying_power),
-        "day_trade_ratio": day_trade_ratio,
-        "is_pdt_restricted": is_pdt_restricted,
-        "pdt_status": {
-            "is_forever": is_pdt_forever,
-            "marked_date": marked_pattern_day_trader_date,
-            "expiry_date": pattern_day_trader_expiry_date,
-            "protection_enabled": day_trades_protection
-        }
-    }
-
+    resp["buying_power"] = round_money(resp["buying_power"])
+    account_info["url"] = resp["url"]
+    return resp
 
 # Get portfolio stocks
 def get_portfolio_stocks():

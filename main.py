@@ -42,24 +42,6 @@ def make_ai_decisions(account_info, portfolio_overview, watchlist_overview):
     if len(TRADE_EXCEPTIONS) > 0:
         constraints.append(f"- Excluded stocks: {', '.join(TRADE_EXCEPTIONS)}")
 
-    # Add detailed PDT information to constraints
-    pdt_status = account_info['pdt_status']
-    if account_info['is_pdt_restricted']:
-        constraints.append("- Account is PDT restricted - no day trades allowed")
-        if pdt_status['is_forever']:
-            constraints.append("- Account is permanently marked as PDT")
-        elif pdt_status['marked_date']:
-            constraints.append(f"- Account marked as PDT on {pdt_status['marked_date']}")
-            if pdt_status['expiry_date']:
-                constraints.append(f"- PDT status expires on {pdt_status['expiry_date']}")
-        if pdt_status['protection_enabled']:
-            constraints.append("- PDT protection is enabled")
-    else:
-        constraints.append(f"- Day trade buying power: {account_info['day_trade_buying_power']} USD")
-        constraints.append(f"- Day trade ratio: {account_info['day_trade_ratio'] * 100}%")
-        if pdt_status['protection_enabled']:
-            constraints.append("- PDT protection is enabled")
-
     ai_prompt = (
         "**Context:**\n"
         f"Today is {datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')}.{chr(10)}"
@@ -95,10 +77,50 @@ def make_ai_decisions(account_info, portfolio_overview, watchlist_overview):
 
 
 # Filter AI hallucinations
-def filter_ai_hallucinations(decisions):
-    # Filter if it's sell or buy with 0 quantity
-    decisions = [decision for decision in decisions if decision['decision'] == "hold" or decision['quantity'] > 0]
-    return decisions
+def filter_ai_hallucinations(account_info, portfolio_overview, watchlist_overview, decisions_data):
+    filtered_decisions = []
+
+    for decision in decisions_data:
+        symbol = decision.get('symbol')
+        decision_type = decision.get('decision')
+        quantity = decision.get('quantity', 0)
+
+        # Filter decisions for stocks in TRADE_EXCEPTIONS
+        if symbol in TRADE_EXCEPTIONS:
+            logger.debug(f"Filtering out {decision_type} decision for {symbol} - in TRADE_EXCEPTIONS")
+            continue
+
+        # Filter sell decisions with 0 quantity
+        if decision_type == "sell" and quantity == 0:
+            logger.debug(f"Filtering out sell decision for {symbol} with 0 quantity")
+            continue
+
+        # Filter buy decisions with 0 quantity
+        if decision_type == "buy" and quantity == 0:
+            logger.debug(f"Filtering out buy decision for {symbol} with 0 quantity")
+            continue
+
+        # Get stock data from either portfolio or watchlist
+        stock_data = portfolio_overview.get(symbol) or watchlist_overview.get(symbol)
+        if not stock_data:
+            logger.debug(f"Filtering out decision for {symbol} - not found in portfolio or watchlist")
+            continue
+
+        # Filter buy decisions with is_buy_pdt_restricted == True
+        if decision_type == "buy" and stock_data.get("is_buy_pdt_restricted", False):
+            logger.debug(f"Filtering out buy decision for {symbol} due to PDT restriction")
+            continue
+
+        # Filter sell decisions with is_sell_pdt_restricted == True
+        if decision_type == "sell" and stock_data.get("is_sell_pdt_restricted", False):
+            logger.debug(f"Filtering out sell decision for {symbol} due to PDT restriction")
+            continue
+
+        filtered_decisions.append(decision)
+
+    logger.debug(f"Filtered out {len(decisions_data) - len(filtered_decisions)} decision(s)")
+    return filtered_decisions
+
 
 # Limit watchlist stocks based on the current week number
 def limit_watchlist_stocks(watchlist_stocks, limit):
@@ -148,7 +170,8 @@ def trading_bot():
         portfolio_overview[symbol] = robinhood.enrich_with_rsi(portfolio_overview[symbol], historical_data_day, symbol)
         portfolio_overview[symbol] = robinhood.enrich_with_vwap(portfolio_overview[symbol], historical_data_day, symbol)
         portfolio_overview[symbol] = robinhood.enrich_with_moving_averages(portfolio_overview[symbol], historical_data_year, symbol)
-        portfolio_overview[symbol] = robinhood.enrich_with_analyst_ratings(portfolio_overview[symbol], ratings_data, symbol)
+        portfolio_overview[symbol] = robinhood.enrich_with_analyst_ratings(portfolio_overview[symbol], ratings_data)
+        portfolio_overview[symbol] = robinhood.enrich_with_pdt_restrictions(portfolio_overview[symbol], symbol)
 
     logger.info("Getting watchlist stocks...")
     watchlist_stocks = []
@@ -181,7 +204,8 @@ def trading_bot():
             watchlist_overview[symbol] = robinhood.enrich_with_rsi(watchlist_overview[symbol], historical_data_day, symbol)
             watchlist_overview[symbol] = robinhood.enrich_with_vwap(watchlist_overview[symbol], historical_data_day, symbol)
             watchlist_overview[symbol] = robinhood.enrich_with_moving_averages(watchlist_overview[symbol], historical_data_year, symbol)
-            watchlist_overview[symbol] = robinhood.enrich_with_analyst_ratings(watchlist_overview[symbol], ratings_data, symbol)
+            watchlist_overview[symbol] = robinhood.enrich_with_analyst_ratings(watchlist_overview[symbol], ratings_data)
+            watchlist_overview[symbol] = robinhood.enrich_with_pdt_restrictions(watchlist_overview[symbol], symbol)
 
     if len(portfolio_overview) == 0 and len(watchlist_overview) == 0:
         logger.warning("No stocks to analyze, skipping AI-based decision-making...")
@@ -197,7 +221,7 @@ def trading_bot():
         logger.error(f"Error making AI-based decision: {e}")
 
     logger.info("Filtering AI hallucinations...")
-    decisions_data = filter_ai_hallucinations(decisions_data)
+    decisions_data = filter_ai_hallucinations(account_info, portfolio_overview, watchlist_overview, decisions_data)
 
     if len(decisions_data) == 0:
         logger.info("No decisions to execute")
@@ -210,12 +234,6 @@ def trading_bot():
         decision = decision_data['decision']
         quantity = decision_data['quantity']
         logger.info(f"{symbol} > Decision: {decision} of {quantity}")
-
-        # TODO: Move to filter_ai_hallucinations function
-        if symbol in TRADE_EXCEPTIONS:
-            trading_results[symbol] = {"symbol": symbol, "quantity": quantity, "decision": decision, "result": "error", "details": "Trade exception"}
-            logger.warning(f"{symbol} > Decision skipped due to trade exception")
-            continue
 
         if decision == "sell":
             try:

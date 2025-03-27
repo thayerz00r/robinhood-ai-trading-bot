@@ -85,9 +85,6 @@ You analyze market conditions every 3600 seconds and make investment decisions.
 - Initial budget: 0.22 USD
 - Max portfolio size: 20 stocks
 - Excluded stocks: VOO, SPY, IVV
-- Day trade buying power: 0.22 USD
-- Day trade ratio: 25.0%
-- PDT protection is enabled
 
 **Stock Data:**
 ```json
@@ -137,6 +134,8 @@ You analyze market conditions every 3600 seconds and make investment decisions.
     "text": "Apple offers an expansive ecosystem of tightly integrated hardware, software, and services, which locks in customers and generates strong profitability."
    }
   ]
+  "is_buy_pdt_restricted": false,
+  "is_sell_pdt_restricted": false
  },
  ...
 }
@@ -171,10 +170,9 @@ AI-response example:
 
 ### Pattern Day Trading (PDT) Protection
 The bot includes built-in protection against Pattern Day Trading (PDT) designation:
-- Automatically checks PDT status before executing trades
+- Automatically checks PDT status for each stock
 - Prevents day trades when PDT restricted
 - Includes PDT information in AI decision-making
-- Shows remaining day trades in logs and AI prompts
 
 For more information about PDT rules, visit: [Robinhood Pattern Day Trading](https://robinhood.com/us/en/support/articles/pattern-day-trading/)
 

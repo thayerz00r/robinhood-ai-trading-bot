@@ -191,12 +191,42 @@ def enrich_with_analyst_ratings(stock_data, ratings_data, symbol):
     return stock_data
 
 
-# Get my buying power
-def get_buying_power():
+# Get my buying power and account info
+def get_account_info():
     resp = rh_run_with_retries(rh.profiles.load_account_profile)
-    if resp is None or 'buying_power' not in resp:
+    if resp is None:
         raise Exception("Error getting profile data: No response")
-    return round_money(resp['buying_power'])
+
+    margin_balances = resp.get('margin_balances', {})
+    day_trade_buying_power = float(margin_balances.get('day_trade_buying_power', 0))
+    day_trade_ratio = float(margin_balances.get('day_trade_ratio', 0))
+    day_trades_protection = margin_balances.get('day_trades_protection', False)
+    is_pdt_forever = margin_balances.get('is_pdt_forever', False)
+    marked_pattern_day_trader_date = margin_balances.get('marked_pattern_day_trader_date')
+    pattern_day_trader_expiry_date = margin_balances.get('pattern_day_trader_expiry_date')
+
+    # Account is PDT restricted if:
+    # 1. It's permanently marked as PDT
+    # 2. It has PDT protection enabled and no day trade buying power
+    # 3. It's marked as PDT and hasn't expired yet
+    is_pdt_restricted = (
+        is_pdt_forever or
+        (day_trades_protection and day_trade_buying_power <= 0) or
+        (marked_pattern_day_trader_date and not pattern_day_trader_expiry_date)
+    )
+
+    return {
+        "buying_power": round_money(resp['buying_power']),
+        "day_trade_buying_power": round_money(day_trade_buying_power),
+        "day_trade_ratio": day_trade_ratio,
+        "is_pdt_restricted": is_pdt_restricted,
+        "pdt_status": {
+            "is_forever": is_pdt_forever,
+            "marked_date": marked_pattern_day_trader_date,
+            "expiry_date": pattern_day_trader_expiry_date,
+            "protection_enabled": day_trades_protection
+        }
+    }
 
 
 # Get portfolio stocks

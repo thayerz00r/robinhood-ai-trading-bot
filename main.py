@@ -52,9 +52,9 @@ def get_ai_amount_guidelines():
 
 
 # Make AI-based decisions on stock portfolio and watchlist
-def make_ai_decisions(buying_power, portfolio_overview, watchlist_overview):
+def make_ai_decisions(account_info, portfolio_overview, watchlist_overview):
     constraints = [
-        f"- Initial budget: {buying_power} USD",
+        f"- Initial budget: {account_info['buying_power']} USD",
         f"- Max portfolio size: {PORTFOLIO_LIMIT} stocks",
     ]
     sell_guidelines, buy_guidelines = get_ai_amount_guidelines()
@@ -64,6 +64,24 @@ def make_ai_decisions(buying_power, portfolio_overview, watchlist_overview):
         constraints.append(f"- Buy Amounts Guidelines: {buy_guidelines}")
     if len(TRADE_EXCEPTIONS) > 0:
         constraints.append(f"- Excluded stocks: {', '.join(TRADE_EXCEPTIONS)}")
+    
+    # Add detailed PDT information to constraints
+    pdt_status = account_info['pdt_status']
+    if account_info['is_pdt_restricted']:
+        constraints.append("- Account is PDT restricted - no day trades allowed")
+        if pdt_status['is_forever']:
+            constraints.append("- Account is permanently marked as PDT")
+        elif pdt_status['marked_date']:
+            constraints.append(f"- Account marked as PDT on {pdt_status['marked_date']}")
+            if pdt_status['expiry_date']:
+                constraints.append(f"- PDT status expires on {pdt_status['expiry_date']}")
+        if pdt_status['protection_enabled']:
+            constraints.append("- PDT protection is enabled")
+    else:
+        constraints.append(f"- Day trade buying power: {account_info['day_trade_buying_power']} USD")
+        constraints.append(f"- Day trade ratio: {account_info['day_trade_ratio'] * 100}%")
+        if pdt_status['protection_enabled']:
+            constraints.append("- PDT protection is enabled")
 
     ai_prompt = (
         "**Context:**\n"
@@ -129,6 +147,9 @@ def limit_watchlist_stocks(watchlist_stocks, limit):
 
 # Main trading bot function
 def trading_bot():
+    log_info("Getting account info...")
+    account_info = get_account_info()
+
     log_info("Getting portfolio stocks...")
     portfolio_stocks = get_portfolio_stocks()
 
@@ -194,8 +215,7 @@ def trading_bot():
 
     try:
         log_info("Making AI-based decision...")
-        buying_power = get_buying_power()
-        decisions_data = make_ai_decisions(buying_power, portfolio_overview, watchlist_overview)
+        decisions_data = make_ai_decisions(account_info, portfolio_overview, watchlist_overview)
     except Exception as e:
         log_error(f"Error making AI-based decision: {e}")
 
@@ -222,6 +242,11 @@ def trading_bot():
 
         if decision == "sell":
             try:
+                if account_info['is_pdt_restricted']:
+                    trading_results[symbol] = {"symbol": symbol, "quantity": quantity, "decision": "sell", "result": "error", "details": "PDT restricted"}
+                    log_warning(f"{symbol} > Decision skipped due to PDT restriction")
+                    continue
+
                 sell_resp = sell_stock(symbol, quantity)
                 if sell_resp and 'id' in sell_resp:
                     if sell_resp['id'] == "demo":

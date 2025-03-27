@@ -7,6 +7,7 @@ from config import *
 from log import *
 from robinhood import *
 import asyncio
+import sys
 
 
 # Initialize session and login
@@ -64,7 +65,7 @@ def make_ai_decisions(account_info, portfolio_overview, watchlist_overview):
         constraints.append(f"- Buy Amounts Guidelines: {buy_guidelines}")
     if len(TRADE_EXCEPTIONS) > 0:
         constraints.append(f"- Excluded stocks: {', '.join(TRADE_EXCEPTIONS)}")
-    
+
     # Add detailed PDT information to constraints
     pdt_status = account_info['pdt_status']
     if account_info['is_pdt_restricted']:
@@ -294,10 +295,19 @@ def trading_bot():
 
 # Run trading bot in a loop
 async def main():
-    await login_to_robinhood()
+    robinhood_token_expiry = 0
 
     while True:
         try:
+            # Check if Robinhood token needs refresh (refresh 5 minutes before expiry)
+            if time.time() >= robinhood_token_expiry - 300:
+                log_info("Login to Robinhood...")
+                login_resp = await login_to_robinhood()
+                if not login_resp or 'expires_in' not in login_resp:
+                    raise Exception("Failed to login to Robinhood")
+                robinhood_token_expiry = time.time() + login_resp['expires_in']
+                log_info(f"Successfully logged in. Token expires in {login_resp['expires_in']} seconds")
+
             if is_market_open():
                 run_interval_seconds = RUN_INTERVAL_SECONDS
                 log_info(f"Market is open, running trading bot in {MODE} mode...")

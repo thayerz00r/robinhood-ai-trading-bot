@@ -43,7 +43,7 @@ to explore how AI can enhance stock trading decisions — potentially outperform
    - **RSI**: Determines overbought/oversold conditions.
    - **VWAP**: Identifies undervalued/overvalued stocks.
    - **Moving Averages**: Evaluates price trends (50-day and 200-day).
-   - **Analyst Ratings**: Incorporates Robinhood’s expert opinions.
+   - **Analyst Ratings**: Incorporates Robinhood's expert opinions.
 4. **AI-Driven Decisions**: Uses OpenAI to generate trading recommendations.
 5. **Trade Execution**: Buys, sells, or holds stocks based on AI insights.
 6. **Continuous Monitoring**: Repeats analysis and trades as the market evolves.
@@ -72,6 +72,7 @@ to explore how AI can enhance stock trading decisions — potentially outperform
 The bot formulates decisions using OpenAI based on:
 - RSI, VWAP, moving averages, and analyst ratings.
 - User-defined constraints (e.g., budget, stock exclusions, portfolio size).
+- Pattern Day Trading (PDT) status to prevent PDT designation.
 
 ### **Example AI Prompt**:
 ``````
@@ -133,52 +134,8 @@ You analyze market conditions every 3600 seconds and make investment decisions.
     "text": "Apple offers an expansive ecosystem of tightly integrated hardware, software, and services, which locks in customers and generates strong profitability."
    }
   ]
- },
- "MSFT": {
-  "current_price": 411.67,
-  "my_quantity": 0.0509,
-  "my_average_buy_price": 412.57,
-  "rsi": 32.53,
-  "vwap": 411.85,
-  "50_day_mavg_price": 431.36,
-  "200_day_mavg_price": 425.73,
-  "analyst_summary": {
-   "num_buy_ratings": 57,
-   "num_hold_ratings": 3,
-   "num_sell_ratings": 0
-  },
-  "analyst_ratings": [
-   {
-    "published_at": "2025-02-01T01:14:52Z",
-    "type": "sell",
-    "text": "Microsoft is not the top player in its key sources of growth, notably Azure and Dynamics."
-   },
-   {
-    "published_at": "2025-02-01T01:14:52Z",
-    "type": "sell",
-    "text": "Microsoft lacks a meaningful mobile presence."
-   },
-   {
-    "published_at": "2025-02-01T01:14:52Z",
-    "type": "sell",
-    "text": "Momentum is slowing in the ongoing shift to subscriptions, particularly in Office, which is generally considered a mature product."
-   },
-   {
-    "published_at": "2025-02-01T01:14:52Z",
-    "type": "buy",
-    "text": "Microsoft has monopoly like positions in various areas (OS, Office) that serve as cash cows to help drive Azure growth."
-   },
-   {
-    "published_at": "2025-02-01T01:14:52Z",
-    "type": "buy",
-    "text": "Microsoft 365 continues to benefit from upselling into higher-priced stock-keeping units as customers are willing to pay up for better security and Teams Phone, which should continue over the next several years."
-   },
-   {
-    "published_at": "2025-02-01T01:14:52Z",
-    "type": "buy",
-    "text": "Public cloud is widely considered to be the future of enterprise computing, and Azure is a leading service that benefits the evolution to first to hybrid environments, and then ultimately to public cloud environments."
-   }
-  ]
+  "is_buy_pdt_restricted": false,
+  "is_sell_pdt_restricted": false
  },
  ...
 }
@@ -210,6 +167,14 @@ AI-response example:
     ...
 ]
 ```
+
+### Pattern Day Trading (PDT) Protection
+The bot includes built-in protection against Pattern Day Trading (PDT) designation:
+- Automatically checks PDT status for each stock
+- Prevents day trades when PDT restricted
+- Includes PDT information in AI decision-making
+
+For more information about PDT rules, visit: [Robinhood Pattern Day Trading](https://robinhood.com/us/en/support/articles/pattern-day-trading/)
 
 ## 📝 Logging System
 The bot logs its activity and trading decisions in a console log.
@@ -338,8 +303,8 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ## 🤝 Contributing
 Contributions are highly encouraged and welcomed!
-Whether you’re looking to enhance the logging system, optimize AI-prompt strategies,
-or enrich stock data — there’s always room for fresh ideas and improvements.
+Whether you're looking to enhance the logging system, optimize AI-prompt strategies,
+or enrich stock data — there's always room for fresh ideas and improvements.
 Feel free to submit pull requests or open issues to share your suggestions and expertise!
 
 ## 📧 Contact

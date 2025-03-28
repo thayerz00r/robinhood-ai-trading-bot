@@ -19,20 +19,20 @@ def log(level, msg):
 
 
 # Print debug log message
-def log_debug(msg):
+def debug(msg):
     log("DEBUG", msg)
 
 
 # Print info log message
-def log_info(msg):
+def info(msg):
     log("INFO", msg)
 
 
 # Print warning log message
-def log_warning(msg):
+def warning(msg):
     log("WARNING", msg)
 
 
 # Print error log message
-def log_error(msg):
+def error(msg):
     log("ERROR", msg)

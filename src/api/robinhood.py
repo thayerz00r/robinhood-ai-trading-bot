@@ -1,43 +1,47 @@
 import robin_stocks.robinhood as rh
+import robin_stocks.urls as rh_urls
 import time
+from datetime import datetime
 from pytz import timezone
 import pandas as pd
-from onepassword import *
 
-from log import *
-import pyotp
-import sys
-from config import MODE, ROBINHOOD_USERNAME, ROBINHOOD_PASSWORD, ROBINHOOD_MFA_SECRET
+from . import onepassword
+from ..utils import auth
+from ..utils import logger
+from config import MODE, ROBINHOOD_USERNAME, ROBINHOOD_PASSWORD
 from config import OP_SERVICE_ACCOUNT_NAME, OP_SERVICE_ACCOUNT_TOKEN, OP_VAULT_NAME, OP_ITEM_NAME
 
+account_info = {}
 
+# Main login function that orchestrates the login process
 async def login_to_robinhood():
     try:
-        mfa_code = ""
-        if ROBINHOOD_MFA_SECRET:
-            mfa_code = pyotp.TOTP(ROBINHOOD_MFA_SECRET).now()
-            log_debug(f"Generated MFA code based on MFA secret: {mfa_code}")
-        elif OP_SERVICE_ACCOUNT_NAME and OP_SERVICE_ACCOUNT_TOKEN and OP_VAULT_NAME and OP_ITEM_NAME:
-            log_debug("Attempting to login to 1Password to get MFA code...")
-            onePasswordClient = await Client.authenticate(
-                auth=OP_SERVICE_ACCOUNT_TOKEN,
-                integration_name=OP_SERVICE_ACCOUNT_NAME,
-                integration_version="v1.0.0",
-            )
-            mfa_code = await onePasswordClient.secrets.resolve("op://" + OP_VAULT_NAME + "/" + OP_ITEM_NAME + "/one-time password?attribute=otp")
+        # Try to get MFA code from secret first
+        mfa_code = auth.get_mfa_code_from_secret()
 
-        if mfa_code:
-            log_debug("Attempting to login to Robinhood with MFA...")
-            rh.login(ROBINHOOD_USERNAME, ROBINHOOD_PASSWORD, mfa_code=mfa_code)
-            log_debug("Robinhood login successful with MFA.")
-        else:
-            log_debug("Attempting to login to Robinhood without MFA...")
-            rh.login(ROBINHOOD_USERNAME, ROBINHOOD_PASSWORD)
-            log_debug("Robinhood login successful without MFA.")
+        # If no MFA secret, try 1Password
+        if not mfa_code and OP_SERVICE_ACCOUNT_NAME and OP_SERVICE_ACCOUNT_TOKEN and OP_VAULT_NAME and OP_ITEM_NAME:
+            mfa_code = await onepassword.get_mfa_code_from_1password()
+
+        try:
+            if mfa_code:
+                logger.debug("Attempting to login to Robinhood with MFA...")
+                login_resp = rh.login(ROBINHOOD_USERNAME, ROBINHOOD_PASSWORD, mfa_code=mfa_code)
+                logger.debug("Robinhood login successful with MFA.")
+            else:
+                logger.debug("Attempting to login to Robinhood without MFA...")
+                login_resp = rh.login(ROBINHOOD_USERNAME, ROBINHOOD_PASSWORD)
+                logger.debug("Robinhood login successful without MFA.")
+            if not login_resp:
+                raise Exception("Login failed - no response received")
+            return login_resp
+        except Exception as e:
+            logger.error(f"Failed to login to Robinhood: {e}")
+            return None
 
     except Exception as e:
-        log_error(f"An error occurred during Robinhood login: {e}")
-        sys.exit(1)
+        logger.error(f"An error occurred during Robinhood login: {e}")
+        return None
 
 
 # Run a Robinhood function with retries and delay between attempts (to handle rate limits)
@@ -46,10 +50,10 @@ def rh_run_with_retries(func, *args, max_retries=3, delay=60, **kwargs):
         result = func(*args, **kwargs)
         msg = f"Function: {func.__name__}, Parameters: {args}, Attempt: {attempt + 1}/{max_retries}, Result: {result}"
         msg = msg[:1000] + '...' if len(msg) > 1000 else msg
-        log_debug(msg)
+        logger.debug(msg)
         if result is not None:
             return result
-        log_debug(f"Function: {func.__name__}, Parameters: {args}, Retrying in {delay} seconds...")
+        logger.debug(f"Function: {func.__name__}, Parameters: {args}, Retrying in {delay} seconds...")
         time.sleep(delay)
     return None
 
@@ -116,7 +120,7 @@ def extract_buy_response_data(buy_resp):
 # Enrich stock data with Relative strength index (RSI)
 def enrich_with_rsi(stock_data, historical_data, symbol):
     if len(historical_data) < 14:
-        log_debug(f"Not enough data to calculate RSI for {symbol}")
+        logger.debug(f"Not enough data to calculate RSI for {symbol}")
         return stock_data
 
     prices = [round_money(day['close_price']) for day in historical_data]
@@ -137,7 +141,7 @@ def enrich_with_rsi(stock_data, historical_data, symbol):
 # Enrich stock data with Volume-weighted average price (VWAP)
 def enrich_with_vwap(stock_data, historical_data, symbol):
     if len(historical_data) < 1:
-        log_debug(f"Not enough data to calculate VWAP for {symbol}")
+        logger.debug(f"Not enough data to calculate VWAP for {symbol}")
         return stock_data
 
     stock_history_df = pd.DataFrame(historical_data)
@@ -157,7 +161,7 @@ def enrich_with_vwap(stock_data, historical_data, symbol):
     dot_product = stock_history_df["volume"].dot(stock_history_df["typical_price"])
 
     if sum_of_volumes == 0:  # Prevent division by zero
-        log_debug(f"Total volume is zero for {symbol}, cannot compute VWAP")
+        logger.debug(f"Total volume is zero for {symbol}, cannot compute VWAP")
         return stock_data
 
     vwap = dot_product / sum_of_volumes
@@ -169,7 +173,7 @@ def enrich_with_vwap(stock_data, historical_data, symbol):
 # Enrich stock data with Moving average (MA)
 def enrich_with_moving_averages(stock_data, historical_data, symbol):
     if len(historical_data) < 200:
-        log_debug(f"Not enough data to calculate moving averages for {symbol}")
+        logger.debug(f"Not enough data to calculate moving averages for {symbol}")
         return stock_data
 
     prices = [round_money(day['close_price']) for day in historical_data]
@@ -180,8 +184,8 @@ def enrich_with_moving_averages(stock_data, historical_data, symbol):
     return stock_data
 
 
-# Get analyst ratings for a stock by symbol
-def enrich_with_analyst_ratings(stock_data, ratings_data, symbol):
+# Enrich stock data with Analyst ratings
+def enrich_with_analyst_ratings(stock_data, ratings_data):
     stock_data["analyst_summary"] = ratings_data['summary']
     stock_data["analyst_ratings"] = list(map(lambda rating: {
         "published_at": rating['published_at'],
@@ -191,13 +195,37 @@ def enrich_with_analyst_ratings(stock_data, ratings_data, symbol):
     return stock_data
 
 
-# Get my buying power
-def get_buying_power():
-    resp = rh_run_with_retries(rh.profiles.load_account_profile)
-    if resp is None or 'buying_power' not in resp:
-        raise Exception("Error getting profile data: No response")
-    return round_money(resp['buying_power'])
+# Get PDT restrictions for a stock by symbol
+def get_stock_day_trade_checks(symbol):
+    stock_id = rh_run_with_retries(rh.helper.id_for_stock, symbol)
+    url = account_info["url"] + 'day_trade_checks'
+    params = {
+        "instrument": rh_urls.instruments() + stock_id + "/"
+    }
+    resp = rh_run_with_retries(rh.request_get, url, payload=params)
+    return resp
 
+
+# Enrich stock data with PDT restrictions
+def enrich_with_pdt_restrictions(stock_data, symbol):
+    day_trade_checks = get_stock_day_trade_checks(symbol)
+    if day_trade_checks is None:
+        return stock_data
+
+    stock_data["is_buy_pdt_restricted"] = day_trade_checks['buy'] is not None or day_trade_checks['buy_extended'] is not None
+    stock_data["is_sell_pdt_restricted"] = day_trade_checks['sell'] is not None or day_trade_checks['sell_extended'] is not None
+    return stock_data
+
+
+# Get my buying power and account info
+def get_account_info():
+    resp = rh_run_with_retries(rh.profiles.load_account_profile)
+    if resp is None:
+        raise Exception("Error getting profile data: No response")
+
+    resp["buying_power"] = round_money(resp["buying_power"])
+    account_info["url"] = resp["url"]
+    return resp
 
 # Get portfolio stocks
 def get_portfolio_stocks():
@@ -261,3 +289,5 @@ def buy_stock(symbol, quantity):
     if buy_resp is None:
         raise Exception(f"Error buying {symbol}: No response")
     return buy_resp
+
+

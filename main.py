@@ -237,11 +237,6 @@ def trading_bot():
 
         if decision == "sell":
             try:
-                if account_info['is_pdt_restricted']:
-                    trading_results[symbol] = {"symbol": symbol, "quantity": quantity, "decision": "sell", "result": "error", "details": "PDT restricted"}
-                    logger.warning(f"{symbol} > Decision skipped due to PDT restriction")
-                    continue
-
                 sell_resp = robinhood.sell_stock(symbol, quantity)
                 if sell_resp and 'id' in sell_resp:
                     if sell_resp['id'] == "demo":

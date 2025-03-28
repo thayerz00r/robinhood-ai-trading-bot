@@ -11,7 +11,7 @@ from ..utils import logger
 from config import MODE, ROBINHOOD_USERNAME, ROBINHOOD_PASSWORD
 from config import OP_SERVICE_ACCOUNT_NAME, OP_SERVICE_ACCOUNT_TOKEN, OP_VAULT_NAME, OP_ITEM_NAME
 
-account_info = {}
+account_info_cache = {}
 
 # Main login function that orchestrates the login process
 async def login_to_robinhood():
@@ -198,7 +198,7 @@ def enrich_with_analyst_ratings(stock_data, ratings_data):
 # Get PDT restrictions for a stock by symbol
 def get_stock_day_trade_checks(symbol):
     stock_id = rh_run_with_retries(rh.helper.id_for_stock, symbol)
-    url = account_info["url"] + 'day_trade_checks'
+    url = account_info_cache["url"] + 'day_trade_checks'
     params = {
         "instrument": rh_urls.instruments() + stock_id + "/"
     }
@@ -224,7 +224,7 @@ def get_account_info():
         raise Exception("Error getting profile data: No response")
 
     resp["buying_power"] = round_money(resp["buying_power"])
-    account_info["url"] = resp["url"]
+    account_info_cache["url"] = resp["url"]
     return resp
 
 # Get portfolio stocks

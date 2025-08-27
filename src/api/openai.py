@@ -4,8 +4,11 @@ import json
 from config import OPENAI_API_KEY, OPENAI_MODEL_NAME
 
 
-# Initialize OpenAI client
-client = OpenAI(api_key=OPENAI_API_KEY)
+# Initialize OpenAI client -- modified for AbacusRouteLLM / OpenAI compatible
+client = OpenAI(
+    base_url="https://routellm.abacus.ai/v1",
+    api_key=OPENAI_API_KEY
+    )
 
 
 # Make AI request to OpenAI API
